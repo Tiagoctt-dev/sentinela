@@ -1,0 +1,22 @@
+# Só o Postgres roda em Docker. Backend e frontend rodam localmente
+# (uvicorn --reload / npm run dev) — sem container no meio, reload instantâneo
+# igual ao fluxo normal de dev. Ver README > "Uso local (recomendado pro dia a dia)".
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: sentinela
+      POSTGRES_PASSWORD: sentinela
+      POSTGRES_DB: sentinela
+    ports:
+      - "5439:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sentinela"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  pgdata:

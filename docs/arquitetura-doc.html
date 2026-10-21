@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Arquitetura do Sentinela</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --bg:#0a0b0d; --panel:#101216; --panel-2:#14171c; --border:#1c1f26;
+    --ink:#eceef2; --muted:#a7aebb; --faint:#6b7280;
+    --teal:#2ec7b0; --teal-soft:rgba(46,199,176,.12); --teal-ink:#7fe9da;
+    --crit:#f2555a; --crit-soft:rgba(242,85,90,.13);
+    --high:#ff8a3d; --high-soft:rgba(255,138,61,.13);
+    --med:#f3c14a; --med-soft:rgba(243,193,74,.13);
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.35);
+  }
+  *{box-sizing:border-box}
+  html,body{background:var(--bg)}
+  body{
+    margin:0; color:var(--ink); font-family:"IBM Plex Sans",system-ui,sans-serif;
+    line-height:1.65; font-size:15.5px; -webkit-font-smoothing:antialiased;
+  }
+  ::selection{background:var(--teal-soft); color:var(--teal-ink)}
+  .mono{font-family:"IBM Plex Mono",ui-monospace,monospace}
+  h1,h2,h3{font-family:"Space Grotesk",sans-serif; font-weight:600; color:var(--ink); line-height:1.2; text-wrap:balance; margin:0}
+  a{color:var(--teal-ink)}
+  code{font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:.92em; background:var(--panel-2); border:1px solid var(--border); padding:1px 6px; border-radius:5px; color:var(--teal-ink)}
+
+  .page{max-width:840px; margin:0 auto; padding:56px 28px 96px}
+
+  /* ---- header ---- */
+  header.hero{margin-bottom:56px}
+  .eyebrow{font-family:"IBM Plex Mono",monospace; font-size:11.5px; letter-spacing:.12em; text-transform:uppercase; color:var(--teal); display:flex; align-items:center; gap:10px; margin-bottom:18px}
+  .eyebrow .hex{width:22px; height:22px; border-radius:6px; background:var(--teal); color:#06231f; display:grid; place-items:center; font-size:12px; font-weight:700; font-family:"Space Grotesk",sans-serif}
+  .eyebrow .sep{color:var(--faint)}
+  h1{font-size:clamp(30px,4.4vw,42px); letter-spacing:-.01em; max-width:15ch}
+  .subtitle{color:var(--muted); font-size:16.5px; margin-top:14px; max-width:62ch}
+  .criteria-strip{display:flex; gap:10px; flex-wrap:wrap; margin-top:26px}
+  .crit-chip{font-family:"IBM Plex Mono",monospace; font-size:11.5px; color:var(--faint); border:1px solid var(--border); border-radius:99px; padding:5px 13px}
+  .crit-chip b{color:var(--muted); font-weight:500}
+  .crit-chip.pts{color:var(--teal); border-color:transparent; background:var(--teal-soft)}
+
+  /* ---- section rhythm ---- */
+  section{margin-top:64px}
+  section > .sec-head{display:flex; align-items:baseline; gap:14px; margin-bottom:8px; padding-bottom:16px; border-bottom:1px solid var(--border)}
+  section > .sec-head .num{font-family:"IBM Plex Mono",monospace; font-size:13px; color:var(--faint)}
+  section > .sec-head h2{font-size:23px}
+  section > .sec-sub{color:var(--faint); font-size:13.5px; margin-top:14px; margin-bottom:32px; max-width:62ch}
+  h3{font-size:16.5px; margin:36px 0 14px; display:flex; align-items:center; gap:9px}
+  h3 .tag{font-family:"IBM Plex Mono",monospace; font-size:10.5px; font-weight:500; color:var(--teal); background:var(--teal-soft); padding:2px 8px; border-radius:5px; letter-spacing:.03em}
+  p{max-width:66ch; color:var(--muted)}
+  p b, li b{color:var(--ink); font-weight:600}
+  ul.plain{padding-left:0; list-style:none; display:grid; gap:9px; max-width:66ch}
+  ul.plain li{position:relative; padding-left:20px; color:var(--muted)}
+  ul.plain li::before{content:"→"; position:absolute; left:0; color:var(--teal)}
+
+  /* ---- stack table ---- */
+  .stack-table{width:100%; border-collapse:collapse; margin-top:6px}
+  .stack-table th{text-align:left; font-family:"IBM Plex Mono",monospace; font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--faint); font-weight:500; padding:0 14px 10px; border-bottom:1px solid var(--border)}
+  .stack-table td{padding:14px; border-bottom:1px solid var(--border); font-size:14.5px; vertical-align:top}
+  .stack-table tr:last-child td{border-bottom:none}
+  .stack-table td:first-child{padding-left:0; width:150px}
+  .stack-table td:last-child{padding-right:0}
+  .stack-role{font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--faint); text-transform:uppercase; letter-spacing:.04em}
+  .stack-name{font-weight:600; color:var(--ink); margin-top:3px}
+  .stack-why{color:var(--muted); font-size:13.5px}
+
+  /* ---- AI cost table ---- */
+  .ai-grid{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:8px}
+  @media (max-width:640px){.ai-grid{grid-template-columns:1fr}}
+  .ai-card{background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:20px 22px}
+  .ai-card .prov{display:flex; align-items:center; justify-content:space-between; margin-bottom:14px}
+  .ai-card .prov-name{font-family:"Space Grotesk",sans-serif; font-weight:600; font-size:16.5px}
+  .cost-pill{font-family:"IBM Plex Mono",monospace; font-size:10.5px; font-weight:600; padding:3px 10px; border-radius:99px; letter-spacing:.03em; text-transform:uppercase}
+  .cost-free{color:var(--teal); background:var(--teal-soft)}
+  .ai-card dl{margin:0; display:grid; gap:9px}
+  .ai-card dt{font-family:"IBM Plex Mono",monospace; font-size:10.5px; color:var(--faint); text-transform:uppercase; letter-spacing:.04em}
+  .ai-card dd{margin:1px 0 0; font-size:13.5px; color:var(--muted)}
+  .ai-note{margin-top:16px; padding:14px 16px; background:var(--panel); border:1px solid var(--border); border-left:3px solid var(--teal); border-radius:0 10px 10px 0; font-size:13.5px; color:var(--muted)}
+  .ai-note b{color:var(--ink)}
+
+  /* ---- folder tree ---- */
+  .tree-panel{background:var(--panel); border:1px solid var(--border); border-radius:12px; overflow:hidden; margin-top:6px}
+  .tree-panel .head{padding:10px 16px; border-bottom:1px solid var(--border); font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--faint); letter-spacing:.04em; text-transform:uppercase}
+  .tree-panel pre{margin:0; padding:18px 20px; overflow-x:auto; font-family:"IBM Plex Mono",monospace; font-size:12.8px; line-height:1.72; color:var(--muted)}
+  .tree-panel .d{color:var(--teal-ink)}
+  .tree-panel .c{color:var(--faint); font-style:italic}
+
+  /* ---- architecture diagram ---- */
+  .flow{display:flex; align-items:stretch; gap:0; margin:28px 0; overflow-x:auto}
+  .flow-node{flex:1; min-width:150px; background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:14px 16px; position:relative}
+  .flow-node .k{font-family:"IBM Plex Mono",monospace; font-size:10px; color:var(--faint); text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px}
+  .flow-node .v{font-size:13px; color:var(--ink); font-weight:500; line-height:1.4}
+  .flow-arrow{flex:0 0 30px; display:grid; place-items:center; color:var(--faint); font-family:"IBM Plex Mono",monospace}
+
+  /* ---- code panel ---- */
+  .code-panel{background:var(--panel); border:1px solid var(--border); border-radius:12px; overflow:hidden; margin:18px 0}
+  .code-panel .head{padding:10px 16px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center}
+  .code-panel .head .path{font-family:"IBM Plex Mono",monospace; font-size:11.5px; color:var(--teal-ink)}
+  .code-panel pre{margin:0; padding:16px 20px; overflow-x:auto; font-family:"IBM Plex Mono",monospace; font-size:12.6px; line-height:1.68; color:var(--muted)}
+  .code-panel .kw{color:var(--high)}
+  .code-panel .str{color:var(--med)}
+  .code-panel .cm{color:var(--faint); font-style:italic}
+  .code-panel .fn{color:var(--teal-ink)}
+
+  /* ---- resilience ladder ---- */
+  .ladder{display:grid; gap:10px; margin-top:8px}
+  .rung{display:grid; grid-template-columns:140px 1fr; gap:18px; align-items:start; background:var(--panel); border:1px solid var(--border); border-left-width:3px; border-radius:0 10px 10px 0; padding:16px 18px}
+  .rung.n1{border-left-color:var(--teal)}
+  .rung.n2{border-left-color:var(--high)}
+  .rung.n3{border-left-color:var(--med)}
+  .rung.n4{border-left-color:var(--faint)}
+  .rung .stage{font-family:"IBM Plex Mono",monospace; font-size:11.5px; text-transform:uppercase; letter-spacing:.04em}
+  .rung.n1 .stage{color:var(--teal)}
+  .rung.n2 .stage{color:var(--high)}
+  .rung.n3 .stage{color:var(--med)}
+  .rung.n4 .stage{color:var(--faint)}
+  .rung .stage .n{display:block; font-size:20px; font-family:"Space Grotesk",sans-serif; font-weight:600; color:var(--ink); margin-bottom:2px}
+  .rung .body b{display:block; font-size:14.5px; color:var(--ink); margin-bottom:4px}
+  .rung .body span{font-size:13.5px; color:var(--muted)}
+
+  /* ---- failure matrix ---- */
+  .fmatrix{width:100%; border-collapse:collapse; margin-top:6px; font-size:13.5px}
+  .fmatrix th{text-align:left; font-family:"IBM Plex Mono",monospace; font-size:10.5px; letter-spacing:.05em; text-transform:uppercase; color:var(--faint); font-weight:500; padding:0 12px 10px; border-bottom:1px solid var(--border)}
+  .fmatrix td{padding:12px; border-bottom:1px solid var(--border); vertical-align:top; color:var(--muted)}
+  .fmatrix tr:last-child td{border-bottom:none}
+  .fmatrix td:first-child{padding-left:0; width:170px}
+  .fmatrix .problem{color:var(--ink); font-weight:600; font-size:13.5px}
+  .fmatrix .sev-dot{display:inline-block; width:7px; height:7px; border-radius:99px; margin-right:7px}
+  .sev-crit{background:var(--crit)} .sev-high{background:var(--high)} .sev-med{background:var(--med)} .sev-low{background:var(--faint)}
+
+  footer{margin-top:80px; padding-top:24px; border-top:1px solid var(--border); font-size:12.5px; color:var(--faint); font-family:"IBM Plex Mono",monospace; display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="hero">
+    <div class="eyebrow"><span class="hex">⬢</span> SENTINELA <span class="sep">·</span> Desafio Banco do Brasil <span class="sep">·</span> Critério 4</div>
+    <h1>Arquitetura de Software e Stack de Desenvolvimento</h1>
+    <p class="subtitle">Como o Sentinela foi construído: as ferramentas escolhidas (e por quê), a estrutura de pastas por trás do dashboard de conformidade, e como o sistema se comporta quando a rede falha, uma IA demora pra responder, ou um provedor externo simplesmente sai do ar.</p>
+    <div class="criteria-strip">
+      <span class="crit-chip pts">2,0 pnts</span>
+      <span class="crit-chip"><b>4.1</b> Stack de dev + IA (pagas vs gratuitas)</span>
+      <span class="crit-chip"><b>4.2</b> Arquitetura + tratamento de erros</span>
+    </div>
+  </header>
+
+  <section id="stack">
+    <div class="sec-head"><span class="num">4.1</span><h2>Escolha da stack de desenvolvimento e IA</h2></div>
+    <p class="sec-sub">Toda a stack roda em cima de ferramentas com camada gratuita generosa — nenhum componente do projeto depende de um plano pago pra funcionar de ponta a ponta.</p>
+
+    <h3>Stack de desenvolvimento</h3>
+    <table class="stack-table">
+      <tr><th>Camada</th><th>Escolha</th><th>Por quê</th></tr>
+      <tr>
+        <td><span class="stack-role">Backend</span></td>
+        <td><span class="stack-name mono">Python · FastAPI</span></td>
+        <td class="stack-why">Async nativo (essencial pra rodar duas IAs e vários probes de rede em paralelo), tipagem via Pydantic, e docs OpenAPI geradas sozinhas.</td>
+      </tr>
+      <tr>
+        <td><span class="stack-role">Frontend</span></td>
+        <td><span class="stack-name mono">React 18 · Vite · TypeScript</span></td>
+        <td class="stack-why">Vite dá hot-reload instantâneo no dev; TypeScript compartilha os mesmos formatos de dado que o backend expõe, pegando incompatibilidade em tempo de build.</td>
+      </tr>
+      <tr>
+        <td><span class="stack-role">Banco</span></td>
+        <td><span class="stack-name mono">PostgreSQL 16</span></td>
+        <td class="stack-why">Histórico de scans e achados como registros relacionais de verdade (não fica preso a arquivo local), com colunas JSON pra payloads variáveis (findings, categorias, resultado da IA).</td>
+      </tr>
+      <tr>
+        <td><span class="stack-role">Containers</span></td>
+        <td><span class="stack-name mono">Docker · docker compose</span></td>
+        <td class="stack-why">Postgres roda containerizado sempre; backend/frontend têm Dockerfile pronto pra build de produção — no dia a dia rodam nativos (uvicorn --reload / vite) pra reload instantâneo.</td>
+      </tr>
+      <tr>
+        <td><span class="stack-role">Versionamento</span></td>
+        <td><span class="stack-name mono">GitHub</span></td>
+        <td class="stack-why">Repositório único, histórico de commits como registro de decisão de arquitetura.</td>
+      </tr>
+    </table>
+
+    <h3>Ferramentas de IA — pagas vs. gratuitas</h3>
+    <div class="ai-grid">
+      <div class="ai-card">
+        <div class="prov"><span class="prov-name">Gemini</span><span class="cost-pill cost-free">gratuito</span></div>
+        <dl>
+          <dt>Fornecedor</dt><dd>Google AI Studio</dd>
+          <dt>Modelo</dt><dd class="mono">gemini-flash-latest</dd>
+          <dt>Camada usada</dt><dd>Free tier (chave de API sem cartão de crédito)</dd>
+          <dt>Papel no sistema</dt><dd>1ª opinião técnica sobre os achados do scan</dd>
+        </dl>
+      </div>
+      <div class="ai-card">
+        <div class="prov"><span class="prov-name">Groq</span><span class="cost-pill cost-free">gratuito</span></div>
+        <dl>
+          <dt>Fornecedor</dt><dd>Groq Cloud</dd>
+          <dt>Modelo</dt><dd class="mono">openai/gpt-oss-120b</dd>
+          <dt>Camada usada</dt><dd>Free tier (inferência em hardware LPU, latência baixa)</dd>
+          <dt>Papel no sistema</dt><dd>2ª opinião independente, roda em paralelo com o Gemini</dd>
+        </dl>
+      </div>
+    </div>
+    <div class="ai-note">
+      <b>Por que duas IAs gratuitas em vez de uma paga:</b> a stack original do desafio citava OpenAI (pago). Optamos por rodar <b>Gemini + Groq simultaneamente</b> sobre o mesmo prompt — cada achado do scan recebe uma recomendação de cada modelo, lado a lado no dashboard. Isso dá duas visões independentes sobre a mesma vulnerabilidade sem custo de API, e a arquitetura (ver 4.2) já é plugável: adicionar um terceiro provedor — pago ou não — é só implementar um <code>call_&lt;provider&gt;()</code> e registrar na lista de provedores.
+    </div>
+  </section>
+
+  <section id="arquitetura">
+    <div class="sec-head"><span class="num">4.2</span><h2>Desenho de arquitetura e tratamento de erros</h2></div>
+    <p class="sec-sub">Estrutura de pastas, como o backend conversa com os provedores de IA, e a cascata de degradação que garante que o scan sempre termina — mesmo quando a rede não coopera.</p>
+
+    <h3>Estrutura de pastas</h3>
+    <div class="tree-panel">
+      <div class="head">backend/ &amp; frontend/ — raiz do repositório</div>
+      <pre><span class="d">backend/app/</span>
+├── <span class="d">domain/</span>            <span class="c"># regra de negócio pura — sem FastAPI, sem banco</span>
+│   ├── static_analyzer.py    análise do código-fonte do alvo
+│   ├── dynamic_analyzer.py   probes contra o app no ar (headers, CORS, rate limit...)
+│   ├── active_probes.py      ataques simulados (BOLA, JWT, mass assignment)
+│   ├── endpoint_discovery.py descoberta de rotas via código + spec OpenAPI
+│   ├── ai_prompt.py          prompt e parser — compartilhado entre provedores
+│   ├── ai_providers.py       1 função por provedor (call_gemini, call_groq)
+│   ├── ai_recommendations.py orquestrador — roda os provedores em paralelo
+│   ├── scoring.py            achados → score por categoria + geral
+│   ├── policy.py             veredito de conformidade (política embutida)
+│   └── pipeline.py           junta tudo acima num resultado de scan
+├── <span class="d">db/</span>                 <span class="c"># SQLAlchemy — Target, ScanRun, Finding, Webhook...</span>
+├── <span class="d">api/</span>                <span class="c"># rotas FastAPI — só tradução HTTP ↔ domain/</span>
+│   ├── routes_scans.py, routes_findings.py, routes_targets.py
+│   ├── routes_stats.py, routes_policies.py, routes_integrations.py
+└── main.py                   <span class="c"># monta o app, CORS, startup</span>
+
+<span class="d">frontend/src/</span>
+├── <span class="d">pages/</span>              <span class="c"># uma tela por rota (Scans, Achados, Projetos...)</span>
+├── <span class="d">components/</span>         <span class="c"># Gauge, CategoryBars, FindingCard, Layout</span>
+└── <span class="d">api/</span>client.ts        <span class="c"># único ponto de contato com o backend</span></pre>
+    </div>
+    <p style="margin-top:14px; font-size:13.5px">A regra que sustenta essa organização: <b>domain/</b> nunca importa FastAPI nem SQLAlchemy — é a mesma camada usada pela API web e pela <code>app/cli.py</code> (execução local sem subir servidor). <b>api/</b> só traduz HTTP para chamadas de domínio e volta.</p>
+
+    <h3>Integração do backend com IA <span class="tag">asyncio.gather</span></h3>
+    <p>Os dois provedores recebem o <b>mesmo prompt</b> — os achados do scan em formato estruturado — e rodam <b>simultaneamente</b>, não em sequência. Um provedor lento ou fora do ar não atrasa o outro:</p>
+    <div class="code-panel">
+      <div class="head"><span class="path">backend/app/domain/ai_recommendations.py</span></div>
+      <pre><span class="kw">async def</span> <span class="fn">enrich_with_ai</span>(target, result, findings, disabled=<span class="kw">False</span>):
+    <span class="cm"># mesmo prompt pros dois — comparação justa entre as opiniões</span>
+    prompt = build_prompt(target, result, actionable)
+
+    <span class="kw">async with</span> httpx.AsyncClient() <span class="kw">as</span> client:
+        outcomes = <span class="kw">await</span> asyncio.gather(*[
+            _run_provider(p, client, prompt) <span class="kw">for</span> p <span class="kw">in</span> PROVIDERS
+        ])
+
+    <span class="cm"># cada achado recebe uma recomendação POR provedor que respondeu</span>
+    <span class="kw">for</span> f <span class="kw">in</span> findings:
+        f.ai_rec = {o[<span class="str">"key"</span>]: extract(o, f.id) <span class="kw">for</span> o <span class="kw">in</span> outcomes <span class="kw">if</span> ok(o, f.id)}</pre>
+    </div>
+
+    <h3>Cascata de degradação</h3>
+    <p>Nenhuma falha de IA impede o scan de terminar. O sistema degrada em quatro níveis, sempre entregando o melhor resultado disponível:</p>
+    <div class="ladder">
+      <div class="rung n1">
+        <div class="stage"><span class="n">01</span>ideal</div>
+        <div class="body"><b>Gemini + Groq respondem</b><span>Cada achado mostra duas recomendações lado a lado no dashboard.</span></div>
+      </div>
+      <div class="rung n2">
+        <div class="stage"><span class="n">02</span>parcial</div>
+        <div class="body"><b>Só um provedor responde</b><span>O outro aparece como "indisponível" com o motivo exato (timeout, 503, chave ausente) — o scan segue com uma opinião.</span></div>
+      </div>
+      <div class="rung n3">
+        <div class="stage"><span class="n">03</span>estático</div>
+        <div class="body"><b>Nenhum provedor responde</b><span>O dashboard cai pras recomendações estáticas já embutidas em cada achado (regra fixa, sem IA) — nunca fica em branco.</span></div>
+      </div>
+      <div class="rung n4">
+        <div class="stage"><span class="n">04</span>sempre</div>
+        <div class="body"><b>Score e achados nunca dependem de IA</b><span>Análise estática/dinâmica e o score de conformidade são calculados antes da chamada de IA — a IA só enriquece, nunca é pré-requisito.</span></div>
+      </div>
+    </div>
+
+    <h3>Latência, erro, timeout e indisponibilidade</h3>
+    <table class="fmatrix">
+      <tr><th>Cenário</th><th>Tratamento</th></tr>
+      <tr>
+        <td class="problem"><span class="sev-dot sev-high"></span>IA demora pra responder</td>
+        <td><code>AI_TIMEOUT_MS</code> (25s por padrão) corta a chamada; se o primeiro modelo do provedor não responde a tempo ou devolve <code>503</code>/<code>429</code>, tenta automaticamente um <b>segundo modelo de fallback</b> antes de desistir.</td>
+      </tr>
+      <tr>
+        <td class="problem"><span class="sev-dot sev-crit"></span>Provedor de IA fora do ar</td>
+        <td>Exceção é capturada por provedor (<code>try/except</code> isolado dentro do <code>gather</code>) — um provedor derrubado nunca derruba o outro nem a resposta HTTP do scan.</td>
+      </tr>
+      <tr>
+        <td class="problem"><span class="sev-dot sev-med"></span>Alvo do scan não responde</td>
+        <td>Todo probe de rede (headers, CORS, rate limit, BOLA, JWT...) tem timeout próprio e vira <code>SKIP</code> em vez de erro — o relatório mostra "pulado" com o motivo, o scan não quebra.</td>
+      </tr>
+      <tr>
+        <td class="problem"><span class="sev-dot sev-med"></span>Webhook/Slack/GitHub fora do ar</td>
+        <td>Disparo best-effort com timeout de 6s <i>depois</i> da resposta do scan já estar pronta — falha de integração de terceiro fica só registrada (<code>last_status</code>), nunca bloqueia o resultado.</td>
+      </tr>
+      <tr>
+        <td class="problem"><span class="sev-dot sev-low"></span>Resposta de IA em formato inesperado</td>
+        <td>Parser tolerante a JSON embrulhado em <code>```json</code>; se ainda assim falhar, aquele provedor cai pro nível 02/03 da cascata acima em vez de propagar exceção.</td>
+      </tr>
+    </table>
+  </section>
+
+  <footer>
+    <span>Sentinela — Scanner de Segurança de APIs</span>
+    <span>Critério 4 · Arquitetura de Software e Stack de Desenvolvimento</span>
+  </footer>
+
+</div>
+</body>
+</html>
