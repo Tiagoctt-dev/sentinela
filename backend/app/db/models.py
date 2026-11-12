@@ -54,7 +54,7 @@ class ScanRun(Base):
     __tablename__ = "scan_runs"
 
     id: Mapped[str] = mapped_column(String, primary_key=True, default=_uuid)
-    target_id: Mapped[str] = mapped_column(ForeignKey("targets.id"))
+    target_id: Mapped[str] = mapped_column(ForeignKey("targets.id"), index=True)
     target_name: Mapped[str] = mapped_column(String)
     mode: Mapped[str] = mapped_column(String)
     overall_score: Mapped[int] = mapped_column(Integer)
@@ -65,7 +65,8 @@ class ScanRun(Base):
     policy: Mapped[dict] = mapped_column(JSON, nullable=True)
     created_by: Mapped[str] = mapped_column(String, nullable=True)
     origin: Mapped[str] = mapped_column(String, nullable=True)  # "manual" | "agendado"
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+    scope: Mapped[dict] = mapped_column(JSON, nullable=True)    # o que foi/não foi executado e por quê
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, index=True)
 
     target: Mapped["TargetModel"] = relationship(back_populates="runs")
     findings: Mapped[list["FindingModel"]] = relationship(back_populates="run", cascade="all, delete-orphan")
@@ -75,8 +76,8 @@ class FindingModel(Base):
     __tablename__ = "findings"
 
     id: Mapped[str] = mapped_column(String, primary_key=True, default=_uuid)
-    run_id: Mapped[str] = mapped_column(ForeignKey("scan_runs.id"))
-    finding_id: Mapped[str] = mapped_column(String)
+    run_id: Mapped[str] = mapped_column(ForeignKey("scan_runs.id"), index=True)
+    finding_id: Mapped[str] = mapped_column(String, index=True)
     category: Mapped[str] = mapped_column(String)
     title: Mapped[str] = mapped_column(String)
     status: Mapped[str] = mapped_column(String)
@@ -88,10 +89,17 @@ class FindingModel(Base):
     owasp: Mapped[str] = mapped_column(String, nullable=True)
     data: Mapped[dict] = mapped_column(JSON, nullable=True)
     ai_rec: Mapped[dict] = mapped_column(JSON, nullable=True)
+    state: Mapped[str] = mapped_column(String, nullable=True)
+    confidence: Mapped[str] = mapped_column(String, nullable=True)
+    asset: Mapped[dict] = mapped_column(JSON, nullable=True)
+    meta: Mapped[dict] = mapped_column(JSON, nullable=True)
     # Workflow de triagem: "open" | "resolved" | "risk_accepted" — separado do
     # status técnico (PASS/FAIL/WARN/SKIP), que é o resultado do scan em si.
     resolution: Mapped[str] = mapped_column(String, default="open")
     resolution_note: Mapped[str] = mapped_column(String, nullable=True)
+    # Aceite de risco pode ter validade; ao vencer, o achado volta a "open" (ver domain/triage.py).
+    resolution_expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
+    resolution_by: Mapped[str] = mapped_column(String, nullable=True)
 
     run: Mapped["ScanRun"] = relationship(back_populates="findings")
 
@@ -141,6 +149,8 @@ class UserModel(Base):
     password_hash: Mapped[str] = mapped_column(String)
     role: Mapped[str] = mapped_column(String, default="analyst")  # admin | analyst | viewer
     active: Mapped[bool] = mapped_column(Boolean, default=True)
+    # Sobe a cada logout / troca de senha: tokens emitidos com versão antiga deixam de valer.
+    token_version: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
     last_login_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
 
@@ -170,3 +180,13 @@ class ScheduleModel(Base):
     next_run_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     last_status: Mapped[str] = mapped_column(String, nullable=True)
     created_by: Mapped[str] = mapped_column(String, nullable=True)
+
+
+class LoginFailureModel(Base):
+    """Tentativas de login malsucedidas (limite por e-mail+IP). No banco, para valer entre processos e reinícios."""
+
+    __tablename__ = "login_failures"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=_uuid)
+    key: Mapped[str] = mapped_column(String, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, index=True)

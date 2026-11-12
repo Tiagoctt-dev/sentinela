@@ -167,8 +167,13 @@ def run_static(target: dict) -> list[Finding]:
     ))
 
     def is_guarded(f: SourceFile) -> bool:
+        # Precisa de uma chamada/checagem reconhecível de auth, não só a palavra
+        # "session" solta (que também aparece em comentários, logs, nomes de variável
+        # não relacionados).
         return bool(
-            re.search(r"\bauth\s*\(", f.text) or re.search(r"session", f.text) or
+            re.search(r"\bauth\s*\(\s*\)", f.text) or
+            re.search(r"getServerSession\s*\(|getToken\s*\(", f.text) or
+            re.search(r"\bsession\s*\?\.\s*user\b|!\s*session\b|\bsession\s*===?\s*null\b", f.text) or
             re.search(r"validateRequest", f.text) or re.search(r"x-twilio-signature", f.text, re.I) or
             re.search(r"CRON_SECRET|Bearer", f.text)
         )
@@ -205,8 +210,14 @@ def run_static(target: dict) -> list[Finding]:
     ))
 
     # ---------- TOKEN & SESSÃO ----------
-    cookie_flags = [flag for flag in ("httpOnly", "secure", "sameSite")
-                    if has(idx, re.compile(flag, re.I)) or has(legacy, re.compile(flag, re.I))]
+    # Exige o valor afirmativo da flag (não só a palavra) — "secure: false" ou um
+    # comentário mencionando a flag não deve contar como proteção presente.
+    cookie_flag_patterns = {
+        "httpOnly": re.compile(r"httpOnly\s*:\s*true", re.I),
+        "secure": re.compile(r"secure\s*:\s*true", re.I),
+        "sameSite": re.compile(r"sameSite\s*:\s*['\"]?(strict|lax|none)", re.I),
+    }
+    cookie_flags = [flag for flag, pat in cookie_flag_patterns.items() if has(idx, pat) or has(legacy, pat)]
     out.append(finding(
         id="S-TOKEN-01", category="TOKEN_SESSION", severity="HIGH",
         title="Cookies de sessão com flags de proteção",

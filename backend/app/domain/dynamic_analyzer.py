@@ -9,7 +9,7 @@ from typing import Optional
 
 import httpx
 
-from .models import STATUS, Finding, finding
+from .models import STATE, STATUS, Finding, finding
 
 TIMEOUT_S = 6.0
 
@@ -102,7 +102,7 @@ async def run_dynamic(target: dict) -> list[Finding]:
             out.append(finding(
                 id=f"D-AUTHZ-0{i + 1}", category="AUTHORIZATION", severity="CRITICAL", source="dynamic",
                 title=f"Acesso não autenticado negado em {p}",
-                status=status, detail=detail,
+                status=status, detail=detail, asset={"method": "GET", "path": p},
                 recommendation="Endpoints com dados do usuário devem retornar 401 sem sessão (OWASP API #1/#2).",
                 evidence=_evidence("GET", base + p, r),
             ))
@@ -165,7 +165,8 @@ async def run_dynamic(target: dict) -> list[Finding]:
             detail=("Todos os cabeçalhos de segurança avaliados estão presentes." if not missing
                     else f"Ausentes: {', '.join(missing)}."),
             recommendation="Adicionar os cabeçalhos de segurança ausentes na resposta (via middleware/proxy do servidor).",
-            evidence=f"{len(wanted) - len(missing)}/{len(wanted)} presentes",
+            evidence=f"GET {base}/\n→ HTTP {health.status}\n{len(wanted) - len(missing)}/{len(wanted)} cabeçalhos presentes" + (f" · ausentes: {', '.join(missing)}" if missing else ""),
+            asset={"method": "GET", "path": "/"},
         ))
 
         # 5) Divulgação de tecnologia/versão (X-Powered-By e Server).
@@ -183,6 +184,8 @@ async def run_dynamic(target: dict) -> list[Finding]:
             status=STATUS.WARN if leaks else STATUS.PASS,
             detail=f"Divulga tecnologia: {'; '.join(leaks)}." if leaks else "Não divulga X-Powered-By nem versão no header Server.",
             recommendation="Ocultar X-Powered-By e a versão no header Server para reduzir a superfície de reconhecimento (OWASP API8).",
+            evidence=(f"GET {base}/\n→ HTTP {health.status}\n" + "; ".join(leaks)) if leaks else "",
+            asset={"method": "GET", "path": "/"},
         ))
 
         # 6) OAuth/OIDC exposto de forma saudável.
@@ -209,12 +212,13 @@ async def run_dynamic(target: dict) -> list[Finding]:
             out.append(finding(
                 id="D-CORS-01", category="HEADERS", severity="HIGH", owasp="API8:2023", source="dynamic",
                 title="CORS não permite qualquer origem com credenciais",
-                status=STATUS.SKIP if not allow_origin else STATUS.FAIL if bad else STATUS.PASS,
+                status=STATUS.FAIL if bad else STATUS.PASS,
+                asset={"method": "GET", "path": "/", "httpStatus": cors_probe.status},
                 detail=(f"Access-Control-Allow-Origin: {allow_origin} + Allow-Credentials: true — qualquer site pode fazer requisições autenticadas em nome da vítima." if bad
                         else f"Access-Control-Allow-Origin: {allow_origin}, sem credenciais liberadas para origem arbitrária." if allow_origin
                         else "Nenhum cabeçalho CORS na resposta para uma origem não confiável (comportamento padrão do navegador já protege)."),
                 recommendation="Nunca combinar Access-Control-Allow-Origin: * (ou refletir qualquer Origin) com Access-Control-Allow-Credentials: true; usar allowlist explícita de origens.",
-                evidence=f"origin: {allow_origin or '-'} · credentials: {allow_creds}",
+                evidence=f"GET {base}/ (Origin: https://attacker-controlled.test)\n→ HTTP {cors_probe.status}\nAllow-Origin: {allow_origin or '-'} · Allow-Credentials: {allow_creds}",
             ))
         else:
             out.append(finding(
@@ -232,15 +236,19 @@ async def run_dynamic(target: dict) -> list[Finding]:
                 break
             statuses.append(r.status)
         throttled = any(s == 429 for s in statuses)
+        reachable_logic = any(s is not None and (200 <= s < 400) for s in statuses)
+        rate_state = STATE.INCONCLUSIVE if (len(statuses) == 20 and not throttled and not reachable_logic) else ""
         out.append(finding(
             id="D-RATE-01", category="TRANSPORT", severity="MEDIUM", owasp="API4:2023", source="dynamic",
             title="Rate limiting — throttling sob rajada de requisições",
-            status=STATUS.SKIP if len(statuses) < 20 else STATUS.PASS if throttled else STATUS.WARN,
+            status=STATUS.SKIP if (len(statuses) < 20 or rate_state) else STATUS.PASS if throttled else STATUS.WARN,
+            state=rate_state, asset={"method": "GET", "path": rate_target},
             detail=(f"Só {len(statuses)}/20 requisições completaram — não deu pra concluir." if len(statuses) < 20
+                    else f"A rota {rate_target} respondeu sempre {sorted(set(statuses))} (sem 2xx): a rajada não alcançou a lógica da aplicação, então não mede rate limiting." if rate_state
                     else "Recebeu 429 (Too Many Requests) durante a rajada — throttling ativo." if throttled
                     else "20 requisições seguidas em rajada, nenhuma bloqueada por rate limit."),
             recommendation="Aplicar rate limiting/quota por IP ou por token em endpoints custosos ou sensíveis (OWASP API4).",
-            evidence=f"{len(statuses)} requisições · códigos: {sorted(set(statuses))}",
+            evidence=f"GET {base}{rate_target} × {len(statuses)}\n→ HTTP {sorted(set(statuses))}",
         ))
 
         # 9) Transporte.
@@ -251,6 +259,8 @@ async def run_dynamic(target: dict) -> list[Finding]:
             detail=("Alvo acessado via HTTPS." if base.startswith("https://")
                     else "Alvo em HTTP (ambiente de desenvolvimento). Em produção, exigir HTTPS/HSTS."),
             recommendation="Forçar HTTPS e redirecionar HTTP→HTTPS em produção.",
+            evidence=f"URL base: {base}",
+            asset={"method": "GET", "path": "/"},
         ))
 
     return out

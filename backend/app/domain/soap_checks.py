@@ -39,7 +39,7 @@ async def run_soap_checks(target: dict) -> list[Finding]:
     return [
         finding(
             id="D-SOAP-01", category="INVENTORY", severity="MEDIUM", owasp="API9:2023", source="dynamic",
-            title="Contrato SOAP (WSDL) não está exposto publicamente", status=STATUS.WARN,
+            title="Contrato SOAP (WSDL) exposto publicamente", status=STATUS.WARN,
             detail=f"O WSDL está acessível sem autenticação e revela {ops} operação(ões) do serviço legado.",
             recommendation="Restringir o WSDL a redes/clientes autorizados (ou autenticar) — ele entrega ao atacante o mapa completo das operações.",
             evidence=f"GET {url}\n→ HTTP 200 · {ops} operação(ões) listadas",

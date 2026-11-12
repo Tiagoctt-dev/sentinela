@@ -53,19 +53,20 @@ def verify_password(password: str, stored: str) -> bool:
 
 
 def make_token(user: UserModel) -> str:
-    payload = _b64(json.dumps({"sub": user.id, "exp": int(time.time()) + TOKEN_TTL_S}).encode())
+    payload = _b64(json.dumps({"sub": user.id, "exp": int(time.time()) + TOKEN_TTL_S, "tv": user.token_version or 0}).encode())
     sig = _b64(hmac.new(signing_key(), payload.encode(), hashlib.sha256).digest())
     return f"{payload}.{sig}"
 
 
-def _read_token(token: str) -> Optional[str]:
+def _read_token(token: str) -> Optional[tuple[str, int]]:
+    """(id do usuário, versão do token) se a assinatura e a validade estiverem corretas."""
     try:
         payload, sig = token.split(".")
         expected = _b64(hmac.new(signing_key(), payload.encode(), hashlib.sha256).digest())
         if not hmac.compare_digest(sig, expected):
             return None
         data = json.loads(_unb64(payload))
-        return data["sub"] if data["exp"] > time.time() else None
+        return (data["sub"], int(data.get("tv", 0))) if data["exp"] > time.time() else None
     except (ValueError, KeyError, TypeError):
         return None
 
@@ -80,11 +81,15 @@ def user_from_request(request: Request, db: Session) -> Optional[UserModel]:
     header = request.headers.get("authorization", "")
     if not header.lower().startswith("bearer "):
         return None
-    uid = _read_token(header[7:].strip())
-    if not uid:
+    parsed = _read_token(header[7:].strip())
+    if not parsed:
         return None
+    uid, version = parsed
     user = db.query(UserModel).filter(UserModel.id == uid).one_or_none()
-    return user if user and user.active else None
+    # token com versão antiga = sessão revogada (logout, troca de senha)
+    if not user or not user.active or (user.token_version or 0) != version:
+        return None
+    return user
 
 
 def get_current_user(request: Request, db: Session = Depends(get_db)):

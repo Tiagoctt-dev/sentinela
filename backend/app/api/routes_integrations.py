@@ -3,7 +3,6 @@
 from datetime import datetime, timezone
 from typing import Optional
 
-from urllib.parse import urlparse
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException
@@ -12,16 +11,17 @@ from sqlalchemy.orm import Session
 
 from ..db.models import GithubIntegrationModel, SlackIntegrationModel, WebhookModel
 from ..db.session import get_db
+from ..netguard import TargetNotAllowed, validate_url
+from ..security import UNREADABLE_HINT, decrypt, encrypt, mask_encrypted, mask_secret
 
 router = APIRouter(prefix="/api/integrations", tags=["integrations"])
 
 
 def _validate_url(url: str) -> str:
-    url = url.strip()
-    parsed = urlparse(url)
-    if parsed.scheme not in ("http", "https") or not parsed.netloc or any(c.isspace() for c in url):
-        raise HTTPException(400, "URL inválida — informe só o endereço que vai receber o evento, ex.: https://exemplo.com/webhook (sem espaços nem texto extra).")
-    return url
+    try:
+        return validate_url(url)
+    except TargetNotAllowed as err:
+        raise HTTPException(400, str(err)) from err
 
 
 def _serialize(w: WebhookModel) -> dict:
@@ -105,9 +105,8 @@ async def test_webhook(webhook_id: str, db: Session = Depends(get_db)):
 # --- GitHub Issues ---------------------------------------------------------
 
 def _serialize_github(g: GithubIntegrationModel) -> dict:
-    masked = f"{'•' * max(len(g.token) - 4, 4)}{g.token[-4:]}" if g.token else ""
     return {
-        "id": g.id, "repo": g.repo, "tokenMasked": masked, "enabled": g.enabled,
+        "id": g.id, "repo": g.repo, "tokenMasked": mask_encrypted(g.token), "enabled": g.enabled,
         "lastStatus": g.last_status,
         "lastTriggeredAt": g.last_triggered_at.isoformat() if g.last_triggered_at else None,
         "createdAt": g.created_at.isoformat(),
@@ -135,7 +134,7 @@ def list_github(db: Session = Depends(get_db)):
 def create_github(body: GithubIntegrationCreate, db: Session = Depends(get_db)):
     if "/" not in body.repo:
         raise HTTPException(400, "Repositório inválido — use o formato owner/repo")
-    g = GithubIntegrationModel(repo=body.repo, token=body.token, enabled=True)
+    g = GithubIntegrationModel(repo=body.repo, token=encrypt(body.token), enabled=True)
     db.add(g)
     db.commit()
     db.refresh(g)
@@ -150,7 +149,7 @@ def update_github(integration_id: str, body: GithubIntegrationUpdate, db: Sessio
     if body.repo is not None:
         g.repo = body.repo
     if body.token is not None:
-        g.token = body.token
+        g.token = encrypt(body.token)
     if body.enabled is not None:
         g.enabled = body.enabled
     db.commit()
@@ -172,8 +171,8 @@ async def test_github(integration_id: str, db: Session = Depends(get_db)):
     g = db.query(GithubIntegrationModel).filter(GithubIntegrationModel.id == integration_id).one_or_none()
     if not g:
         raise HTTPException(404, "Integração não encontrada")
-    headers = {"Authorization": f"Bearer {g.token}", "Accept": "application/vnd.github+json"}
     try:
+        headers = {"Authorization": f"Bearer {decrypt(g.token)}", "Accept": "application/vnd.github+json"}
         async with httpx.AsyncClient() as client:
             res = await client.get(f"https://api.github.com/repos/{g.repo}", headers=headers, timeout=6.0)
         if res.is_success:
@@ -194,9 +193,17 @@ async def test_github(integration_id: str, db: Session = Depends(get_db)):
 
 # --- Slack ------------------------------------------------------------------
 
+def _slack_masked(s: SlackIntegrationModel) -> str:
+    try:
+        url = decrypt(s.webhook_url)
+    except ValueError:
+        return UNREADABLE_HINT
+    return url[:26] + mask_secret(url, keep=4)
+
+
 def _serialize_slack(s: SlackIntegrationModel) -> dict:
     return {
-        "id": s.id, "name": s.name, "webhookUrl": s.webhook_url, "enabled": s.enabled,
+        "id": s.id, "name": s.name, "webhookUrl": _slack_masked(s), "enabled": s.enabled,
         "lastStatus": s.last_status,
         "lastTriggeredAt": s.last_triggered_at.isoformat() if s.last_triggered_at else None,
         "createdAt": s.created_at.isoformat(),
@@ -224,7 +231,7 @@ def list_slack(db: Session = Depends(get_db)):
 def create_slack(body: SlackIntegrationCreate, db: Session = Depends(get_db)):
     if not body.webhookUrl.startswith("https://hooks.slack.com/"):
         raise HTTPException(400, "URL inválida — use a URL de Incoming Webhook gerada pelo Slack")
-    s = SlackIntegrationModel(name=body.name, webhook_url=body.webhookUrl, enabled=True)
+    s = SlackIntegrationModel(name=body.name, webhook_url=encrypt(_validate_url(body.webhookUrl)), enabled=True)
     db.add(s)
     db.commit()
     db.refresh(s)
@@ -239,7 +246,7 @@ def update_slack(integration_id: str, body: SlackIntegrationUpdate, db: Session 
     if body.name is not None:
         s.name = body.name
     if body.webhookUrl is not None:
-        s.webhook_url = body.webhookUrl
+        s.webhook_url = encrypt(_validate_url(body.webhookUrl))
     if body.enabled is not None:
         s.enabled = body.enabled
     db.commit()
@@ -264,7 +271,7 @@ async def test_slack(integration_id: str, db: Session = Depends(get_db)):
     payload = {"text": "🔧 Disparo de teste do Sentinela — se você recebeu isso no canal, a integração com o Slack está funcionando."}
     try:
         async with httpx.AsyncClient() as client:
-            res = await client.post(s.webhook_url, json=payload, timeout=6.0)
+            res = await client.post(decrypt(s.webhook_url), json=payload, timeout=6.0)
         s.last_status = f"HTTP {res.status_code}" if res.is_success else f"erro HTTP {res.status_code}"
     except Exception as err:  # noqa: BLE001
         s.last_status = f"falha: {err}"

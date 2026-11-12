@@ -2,17 +2,16 @@
 # trilha de auditoria.
 
 import re
-import time
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from ..auth import (MIN_PASSWORD_LEN, ROLES, admin_only, auth_enabled, get_current_user, hash_password,
                     make_token, verify_password)
-from ..db.models import AuditLogModel, UserModel
+from ..db.models import AuditLogModel, LoginFailureModel, UserModel
 from ..db.session import get_db
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
@@ -20,7 +19,6 @@ users_router = APIRouter(prefix="/api/users", tags=["users"], dependencies=[Depe
 audit_router = APIRouter(prefix="/api/audit", tags=["audit"], dependencies=[Depends(admin_only)])
 
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
-_failures: dict[str, list[float]] = {}
 MAX_FAILURES, WINDOW_S = 5, 300
 _DUMMY_HASH = hash_password("dummy-password-for-timing")
 
@@ -77,18 +75,19 @@ def bootstrap(body: SetupBody, db: Session = Depends(get_db)):
 def login(body: LoginBody, request: Request, db: Session = Depends(get_db)):
     email = body.email.strip().lower()
     key = f"{email}|{request.client.host if request.client else ''}"
-    now = time.time()
-    recent = [t for t in _failures.get(key, []) if now - t < WINDOW_S]
-    if len(recent) >= MAX_FAILURES:
+    cutoff = datetime.now(timezone.utc) - timedelta(seconds=WINDOW_S)
+    recent = db.query(LoginFailureModel).filter(LoginFailureModel.key == key, LoginFailureModel.created_at >= cutoff).count()
+    if recent >= MAX_FAILURES:
         raise HTTPException(429, "Muitas tentativas. Aguarde alguns minutos e tente de novo.")
 
     user = db.query(UserModel).filter(UserModel.email == email).one_or_none()
     ok = verify_password(body.password, user.password_hash if user else _DUMMY_HASH)  # mesmo custo com ou sem usuário
     if not user or not ok or not user.active:
-        _failures[key] = recent + [now]
+        db.add(LoginFailureModel(key=key))
+        db.commit()
         raise HTTPException(401, "E-mail ou senha incorretos.")
 
-    _failures.pop(key, None)
+    db.query(LoginFailureModel).filter(LoginFailureModel.key == key).delete()
     user.last_login_at = datetime.now(timezone.utc)
     db.commit()
     return {"token": make_token(user), "user": _serialize(user)}
@@ -97,6 +96,33 @@ def login(body: LoginBody, request: Request, db: Session = Depends(get_db)):
 @router.get("/me")
 def me(user=Depends(get_current_user)):
     return {"id": user.id, "email": user.email, "name": user.name, "role": user.role}
+
+
+@router.post("/logout", status_code=204)
+def logout(db: Session = Depends(get_db), user=Depends(get_current_user)):
+    """Revoga TODAS as sessões do usuário (em qualquer dispositivo): os tokens anteriores deixam de valer."""
+    if isinstance(user, UserModel):
+        user.token_version = (user.token_version or 0) + 1
+        db.commit()
+
+
+class ChangePassword(BaseModel):
+    currentPassword: str
+    newPassword: str
+
+
+@router.post("/change-password")
+def change_password(body: ChangePassword, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    if not isinstance(user, UserModel):
+        raise HTTPException(400, "Sem login ativo (SENTINELA_AUTH=off): não há senha para trocar.")
+    if not verify_password(body.currentPassword, user.password_hash):
+        raise HTTPException(400, "A senha atual está incorreta.")
+    _check_password_rules(body.newPassword)
+    user.password_hash = hash_password(body.newPassword)
+    user.token_version = (user.token_version or 0) + 1  # derruba as demais sessões
+    db.commit()
+    db.refresh(user)
+    return {"token": make_token(user), "user": _serialize(user)}
 
 
 # ---------------- usuários (admin) ----------------
@@ -158,6 +184,7 @@ def update_user(user_id: str, body: UserUpdate, db: Session = Depends(get_db), m
     if body.password:
         _check_password_rules(body.password)
         u.password_hash = hash_password(body.password)
+        u.token_version = (u.token_version or 0) + 1  # senha redefinida pelo admin: sessões antigas caem
     db.commit()
     db.refresh(u)
     return _serialize(u)
@@ -176,8 +203,9 @@ def delete_user(user_id: str, db: Session = Depends(get_db), me=Depends(get_curr
 
 # ---------------- auditoria (admin) ----------------
 @audit_router.get("")
-def list_audit(db: Session = Depends(get_db), limit: int = 200):
-    rows = db.query(AuditLogModel).order_by(AuditLogModel.created_at.desc()).limit(min(limit, 1000)).all()
+def list_audit(response: Response, db: Session = Depends(get_db), limit: int = Query(200, ge=1, le=1000), offset: int = Query(0, ge=0)):
+    response.headers["X-Total-Count"] = str(db.query(AuditLogModel).count())
+    rows = db.query(AuditLogModel).order_by(AuditLogModel.created_at.desc()).offset(offset).limit(limit).all()
     return [
         {"id": r.id, "user": r.user_email, "method": r.method, "path": r.path, "status": r.status_code,
          "ip": r.ip, "createdAt": r.created_at.isoformat()}

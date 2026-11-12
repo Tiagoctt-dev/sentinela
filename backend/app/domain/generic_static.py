@@ -85,12 +85,12 @@ RULES = [
      re.compile(r"(?:md5|sha1)\s*\(.{0,40}(?:pass|senha|pwd)|hashlib\.(?:md5|sha1)\(.{0,60}(?:pass|senha|pwd)|MessageDigest\.getInstance\(\s*[\"'](?:MD5|SHA-?1)[\"']\s*\)|createHash\(\s*['\"](?:md5|sha1)['\"]\s*\)", re.I),
      "Usar bcrypt, scrypt ou Argon2 (com salt) para senhas; MD5/SHA-1 são quebráveis por força bruta.", True),
     ("S-SEC-05", "Consultas SQL não são montadas por concatenação", "HIGH",
-     re.compile(r"""(?ix)
-        (?:execute|query|raw|prepareStatement|createQuery|executeQuery)\s*\(\s*
-        (?:f["']\s*(?:select|insert|update|delete)\b[^"']*\{
-          |["']\s*(?:select|insert|update|delete)\b[^"']*["']\s*(?:\+|%\s*\(|\.format\()
-          |`\s*(?:select|insert|update|delete)\b[^`]*\$\{)
-     """),
+     re.compile(
+         r"(?:execute|query|raw|prepareStatement|createQuery|executeQuery)\s*\(\s*(?:"
+         r"f(?P<fq>[\"'])\s*(?:select|insert|update|delete)\b[^\n]*?\{"            # f-string com {valor}
+         r"|(?P<cq>[\"'])\s*(?:select|insert|update|delete)\b[^\n]*?(?P=cq)\s*(?:\+|%\s*\(|\.format\()"  # concatenação, %, .format
+         r"|`\s*(?:select|insert|update|delete)\b[^`]*\$\{)",                             # template literal
+         re.I),
      "Usar consultas parametrizadas/prepared statements ou o ORM — nunca concatenar entrada do usuário em SQL (injeção).", True),
     ("S-SEC-06", "CORS não libera qualquer origem", "MEDIUM",
      re.compile(r"allow_origins\s*=\s*\[\s*[\"']\*[\"']|Access-Control-Allow-Origin['\"]?\s*[:,=]\s*['\"]\*|origin\s*:\s*['\"]\*['\"]|AllowAnyOrigin\(\)|CORS\(\s*app\s*\)|addAllowedOrigin\(\s*[\"']\*[\"']", re.I),

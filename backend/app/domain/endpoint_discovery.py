@@ -111,7 +111,7 @@ def build_static_finding(target: dict, index: Index) -> Finding:
     return finding(
         id="S-DISC-01", category="INVENTORY", severity="INFO", owasp="API9:2023", source="static",
         title="Discovery de endpoints (código)",
-        status=STATUS.PASS if endpoints else STATUS.SKIP,
+        status=STATUS.SKIP if not endpoints else STATUS.WARN if unconfigured else STATUS.PASS,
         detail=(f"{len(endpoints)} endpoint(s) identificados no código." +
                 (f" {len(unconfigured)} não constam no target configurado — revise se são intencionais (shadow/zombie API)."
                  if unconfigured else "")
@@ -124,7 +124,11 @@ def build_static_finding(target: dict, index: Index) -> Finding:
 
 async def build_dynamic_finding(client: httpx.AsyncClient, target: dict) -> Finding:
     base = (target.get("baseUrl") or "").rstrip("/")
-    spec_path, endpoints = await discover_dynamic_endpoints(client, base)
+    uploaded = target.get("openapiSpec")
+    if isinstance(uploaded, dict) and _extract_openapi_paths(uploaded):
+        spec_path, endpoints = "spec enviada", _extract_openapi_paths(uploaded)
+    else:
+        spec_path, endpoints = await discover_dynamic_endpoints(client, base)
     configured = _configured_paths(target)
     unconfigured = [e for e in endpoints if e["path"] not in configured]
     return finding(

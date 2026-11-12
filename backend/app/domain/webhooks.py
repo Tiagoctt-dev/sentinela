@@ -9,6 +9,7 @@ import httpx
 from sqlalchemy.orm import Session
 
 from ..db.models import FindingModel, GithubIntegrationModel, SlackIntegrationModel, WebhookModel
+from ..security import decrypt
 
 TIMEOUT_S = 6.0
 
@@ -60,7 +61,7 @@ async def fire_scan_completed_slack(db: Session, scan_payload: dict) -> None:
     async with httpx.AsyncClient() as client:
         for s in integrations:
             try:
-                res = await client.post(s.webhook_url, json=body, timeout=TIMEOUT_S)
+                res = await client.post(decrypt(s.webhook_url), json=body, timeout=TIMEOUT_S)
                 s.last_status = f"HTTP {res.status_code}" if res.is_success else f"erro HTTP {res.status_code}"
             except Exception as err:  # noqa: BLE001 — integração de terceiro, nunca deixa derrubar o scan
                 s.last_status = f"falha: {err}"
@@ -69,13 +70,13 @@ async def fire_scan_completed_slack(db: Session, scan_payload: dict) -> None:
 
 
 async def fire_scan_completed_github(db: Session, scan_payload: dict, findings: list[FindingModel]) -> None:
-    """Cria uma issue no GitHub pra cada achado crítico (severity=CRITICAL,
-    status=FAIL) do scan."""
+    """Cria uma issue no GitHub pra cada vulnerabilidade crítica CONFIRMADA
+    (severity=CRITICAL, state=vulnerable) do scan. Indícios não geram issue."""
     integrations = db.query(GithubIntegrationModel).filter(GithubIntegrationModel.enabled.is_(True)).all()
     if not integrations:
         return
 
-    critical = [f for f in findings if f.severity == "CRITICAL" and f.status == "FAIL"]
+    critical = [f for f in findings if f.severity == "CRITICAL" and f.state == "vulnerable"]
     if not critical:
         for g in integrations:
             g.last_status = "sem achados críticos neste scan"
@@ -85,7 +86,12 @@ async def fire_scan_completed_github(db: Session, scan_payload: dict, findings: 
 
     async with httpx.AsyncClient() as client:
         for g in integrations:
-            headers = {"Authorization": f"Bearer {g.token}", "Accept": "application/vnd.github+json"}
+            try:
+                headers = {"Authorization": f"Bearer {decrypt(g.token)}", "Accept": "application/vnd.github+json"}
+            except ValueError:
+                g.last_status = "erro: token ilegível (a chave de criptografia mudou) — cadastre de novo"
+                g.last_triggered_at = _now()
+                continue
             created, failed = 0, 0
             for f in critical:
                 title = f"[Sentinela] {f.title}"

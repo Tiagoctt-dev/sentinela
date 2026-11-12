@@ -22,7 +22,7 @@ def summary(db: Session = Depends(get_db)):
         run_ids = [r.id for r in latest]
         findings = db.query(FindingModel).filter(FindingModel.run_id.in_(run_ids)).all()
         for f in findings:
-            if f.status == "FAIL" and f.severity == "CRITICAL" and f.resolution == "open":
+            if f.state == "vulnerable" and f.severity == "CRITICAL" and f.resolution == "open":
                 criticos_abertos += 1
             if f.category == "INVENTORY" and isinstance(f.data, dict):
                 for e in f.data.get("endpoints") or []:

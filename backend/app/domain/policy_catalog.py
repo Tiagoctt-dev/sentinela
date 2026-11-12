@@ -5,6 +5,9 @@
 # kind: "static" (lê o código do projeto) | "dynamic" (requisições HTTP ao alvo em execução)
 CHECKS = [
     # --- API1 · BOLA
+    {"id": "D-BOLA-A1", "kind": "dynamic", "severity": "CRITICAL", "owasp": "API1:2023",
+     "title": "BOLA automático — rotas /recurso/{id} negam o objeto de outro usuário",
+     "how": "Descobre na spec as rotas GET com identificador no caminho, confirma que o dono lê o próprio recurso e repete a chamada com outro usuário comum, com controle de ID inexistente."},
     {"id": "S-BOLA-01", "kind": "static", "severity": "MEDIUM", "owasp": "API1:2023",
      "title": "Autorização em nível de objeto (BOLA)",
      "how": "Lê o schema/rotas e procura modelos com dono (userId) acessados sem filtro pelo dono."},
@@ -69,6 +72,9 @@ CHECKS = [
     {"id": "D-BFLA-0N", "kind": "dynamic", "severity": "HIGH", "owasp": "API5:2023",
      "title": "BFLA — usuário comum não acessa função administrativa",
      "how": "Loga com um usuário de papel comum e chama as rotas administrativas configuradas; qualquer 2xx reprova."},
+    {"id": "D-BFLA-A1", "kind": "dynamic", "severity": "HIGH", "owasp": "API5:2023",
+     "title": "BFLA automático — rotas administrativas da spec negam usuário comum",
+     "how": "Descobre na spec as rotas GET com 'admin', 'internal' ou 'debug' e as chama com um usuário comum; qualquer 2xx reprova."},
     {"id": "S-AUTHZ-01", "kind": "static", "severity": "HIGH", "owasp": "API5:2023",
      "title": "Middleware protege as rotas da aplicação",
      "how": "Confirma que existe middleware global de sessão com matcher cobrindo as rotas."},
@@ -159,7 +165,7 @@ CHECKS = [
      "how": "Envia um POST forjado (formato Twilio/WhatsApp, sem x-twilio-signature) ao webhook configurado; deve responder 403."},
 ]
 
-from .models import OWASP_API
+from .models import OWASP_API  # noqa: E402
 
 # Fonte única do mapeamento check → OWASP é OWASP_API (models.py), que o pipeline
 # aplica aos achados; aqui só complementamos o que ela não cobre.
@@ -177,7 +183,7 @@ NOT_COVERED_NOTES = {  # itens do Top 10 sem nenhuma verificação
 # campos privilegiados) — sem isso o Sentinela as pula (SKIP) em vez de adivinhar.
 NEEDS_CONFIG = {"D-BOLA-01", "D-JWT-01", "D-JWT-02", "D-JWT-03", "D-AUTH-01", "D-AUTHZ-0N",
                 "D-EXPOSE-01", "D-MASS-01", "D-INTEG-01", "D-INTEG-02", "D-BFLA-0N",
-                "D-SPEC-01", "D-FLOW-02", "D-SSRF-01"}
+                "D-SPEC-01", "D-FLOW-02", "D-SSRF-01", "D-BFLA-A1", "D-BOLA-A1"}
 
 CHECK_OWASP = {c["id"]: c["owasp"] for c in CHECKS}
 
@@ -187,6 +193,6 @@ def owasp_for_check(check_id: str) -> str | None:
         return CHECK_OWASP[check_id]
     if check_id.startswith("D-AUTHZ-"):
         return CHECK_OWASP["D-AUTHZ-0N"]
-    if check_id.startswith("D-BFLA-"):
+    if check_id.startswith("D-BFLA-") and check_id != "D-BFLA-A1":
         return CHECK_OWASP["D-BFLA-0N"]
     return None

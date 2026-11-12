@@ -10,8 +10,8 @@ from typing import Any, Optional
 
 import httpx
 
-from .jwt_utils import decode_jwt, find_weak_hmac_secret, forge_alg_none
-from .models import STATUS, Finding, finding
+from .jwt_utils import WEAK_SECRETS, decode_jwt, find_weak_hmac_secret, forge_alg_none
+from .models import STATE, STATUS, Finding, finding
 
 TIMEOUT_S = 8.0
 
@@ -74,6 +74,11 @@ async def run_active_probes(target: dict) -> list[Finding]:
     token_field = auth.get("tokenField", "token")
     out: list[Finding] = []
     provided = target.get("_credentials") or []
+    allow_mut = bool(target.get("allowMutations"))
+    SAFE_METHODS = ("GET", "HEAD", "OPTIONS")
+
+    def mutation_blocked(method: str) -> bool:
+        return str(method).upper() not in SAFE_METHODS and not allow_mut
 
     def bearer(token: str) -> dict:
         return {"Authorization": scheme + token}
@@ -106,7 +111,8 @@ async def run_active_probes(target: dict) -> list[Finding]:
             return {"u": u, "p": p, "reg": reg, "login": login, "token": token}
 
         provided_users = [await login_provided(c) for c in provided] if auth.get("login") and provided else []
-        can_register = bool(auth.get("register"))
+        # cadastrar contas no alvo é escrita: só com autorização explícita do projeto
+        can_register = bool(auth.get("register")) and allow_mut
         probe = provided_users[0] if provided_users else (await make_user() if can_register else None)
         if probe is None or not probe["reg"].ok or not probe["token"]:
             out.append(finding(
@@ -114,6 +120,7 @@ async def run_active_probes(target: dict) -> list[Finding]:
                 title="Probes ativos pulados (fluxo de auth indisponível)",
                 detail=(f"Não consegui logar em {base} com as credenciais de teste cadastradas — confira usuário, senha e rota de login."
                         if provided_users else f"Não consegui registrar/logar em {base} para os testes ativos."),
+                data={"requiresLogin": True},
             ))
             return out
 
@@ -124,21 +131,33 @@ async def run_active_probes(target: dict) -> list[Finding]:
 
             forged = forge_alg_none(probe["token"])
             forged_accepted = None
+            anon_open = False
+            forged_status = anon_status = None
             if forged and auth.get("protectedProbe"):
+                # controle: se a rota já responde 2xx SEM credencial, aceitar o token forjado não prova nada
+                anon = await _req(client, base + auth["protectedProbe"])
+                anon_open = anon.ok and 200 <= anon.status < 300
+                anon_status = anon.status
                 r = await _req(client, base + auth["protectedProbe"], headers=bearer(forged))
-                forged_accepted = r.ok and r.status == 200
+                forged_status = r.status
+                forged_accepted = (r.ok and r.status == 200) if not anon_open else None
             out.append(finding(
                 id="D-JWT-01", category="TOKEN_SESSION", severity="CRITICAL", owasp="API2:2023", source="dynamic",
                 title="JWT — alg=none não é aceito",
                 status=(STATUS.SKIP if forged_accepted is None
                         else STATUS.FAIL if forged_accepted else STATUS.PASS),
-                detail=(f"Token usa alg={alg}; não testei aceitação de alg=none (sem protectedProbe configurado)."
+                state=(STATE.INCONCLUSIVE if anon_open else STATE.NOT_RUN if forged_accepted is None else ""),
+                asset={"method": "GET", "path": auth.get("protectedProbe", "")},
+                detail=(f"A rota {auth.get('protectedProbe')} respondeu 2xx mesmo sem credencial; não é possível distinguir se o token forjado foi aceito ou se a rota é pública."
+                        if anon_open
+                        else f"Token usa alg={alg}; o teste de alg=none não foi executado (rota protegida não configurada)."
                         if forged_accepted is None
                         else "Um token reassinado com alg=none (sem assinatura) foi ACEITO pela rota protegida — qualquer claim pode ser forjado."
                         if forged_accepted
                         else "Um token com alg=none foi corretamente rejeitado."),
                 recommendation="Nunca honrar o alg vindo do header do token; fixar o algoritmo esperado (allowlist) na verificação.",
-                evidence=f"alg original: {alg}",
+                evidence=(f"GET {base}{auth.get('protectedProbe', '')}" + "\n" + "(Authorization: Bearer <token com alg=none e sem assinatura>)" + "\n" + f"→ HTTP {forged_status or '-'}" + "\n" + f"controle (sem credencial) → HTTP {anon_status or '-'}" + "\n" + f"alg original do token: {alg}") if auth.get("protectedProbe") else f"alg original: {alg}",
+                data={"requiresLogin": True},
             ))
 
             weak = find_weak_hmac_secret(probe["token"])
@@ -147,10 +166,11 @@ async def run_active_probes(target: dict) -> list[Finding]:
                 title="JWT — segredo HMAC não é trivial",
                 status=STATUS.SKIP if alg not in ("HS256", "HS384", "HS512") else STATUS.FAIL if weak else STATUS.PASS,
                 detail=(f"Algoritmo {alg} não é HMAC — verificação de segredo fraco não se aplica." if alg not in ("HS256", "HS384", "HS512")
-                        else f'Segredo "{weak}" (lista de segredos comuns) reproduz a assinatura — qualquer um pode forjar tokens.' if weak
+                        else 'A assinatura foi reproduzida com um segredo da lista de segredos comuns (o valor não é registrado) — qualquer um pode forjar tokens.' if weak
                         else "Nenhum segredo da wordlist testada reproduziu a assinatura."),
                 recommendation="Usar um segredo aleatório de alto entropia (≥32 bytes) ou migrar para chave assimétrica (RS256/ES256).",
-                evidence=f"alg: {alg}",
+                evidence=(f"alg: {alg} · assinatura reproduzida com segredo da lista de {len(WEAK_SECRETS)} segredos comuns (valor omitido)" if weak else f"alg: {alg} · {len(WEAK_SECRETS)} segredos comuns testados"),
+                data={"requiresLogin": True},
             ))
 
             has_exp = "exp" in decoded["payload"]
@@ -160,6 +180,8 @@ async def run_active_probes(target: dict) -> list[Finding]:
                 status=STATUS.PASS if has_exp else STATUS.WARN,
                 detail="Token traz exp — expira." if has_exp else "Token não tem claim exp — pode não expirar nunca.",
                 recommendation="Todo token de acesso deve ter TTL curto via claim exp.",
+                evidence=f"Claims do token: {', '.join(sorted(decoded['payload'])) or '(nenhum)'}",
+                data={"requiresLogin": True},
             ))
 
         # ---------- API3: exposição de dados sensíveis na resposta ----------
@@ -175,6 +197,7 @@ async def run_active_probes(target: dict) -> list[Finding]:
                         else "Nenhum campo da lista de sensíveis (senha, chave, documento...) apareceu na resposta."),
                 recommendation="Usar allowlist de campos na serialização da resposta (nunca serializar o model inteiro).",
                 evidence=(f"GET {base}{auth['protectedProbe']} (autenticado)\n→ campos sensíveis na resposta: {', '.join(hits)}" if hits else ""),
+                data={"requiresLogin": True},
             ))
 
         # ---------- API2: autenticação exigida e token validado ----------
@@ -195,6 +218,7 @@ async def run_active_probes(target: dict) -> list[Finding]:
                         else f"{auth['protectedProbe']} respondeu sem token={no_tok.status}, com token inválido={bad_tok.status} — deveria negar (401)."),
                 recommendation="Exigir token assinado e válido em toda rota protegida; rejeitar ausência e tokens malformados.",
                 evidence=f"GET {base}{auth['protectedProbe']}\n→ sem token: HTTP {no_tok.status or '-'} · token inválido: HTTP {bad_tok.status or '-'}",
+                data={"requiresLogin": True},
             ))
 
         # ---------- API1: BOLA dinâmico (dois usuários) ----------
@@ -213,24 +237,53 @@ async def run_active_probes(target: dict) -> list[Finding]:
                     id="D-BOLA-01", category="AUTHORIZATION", status=STATUS.SKIP, severity="INFO", source="dynamic",
                     title="BOLA dinâmico pulado",
                     detail="Não consegui preparar dois usuários de teste — cadastre 2 credenciais no projeto ou informe a rota de cadastro.",
+                    data={"requiresLogin": True},
                 ))
             else:
                 bola_cfg = target["bola"]
+                bola_method = str(bola_cfg.get("method", "PUT")).upper()
                 path = bola_cfg["path"].replace("{victimId}", str(victim.get("resourceId") or victim["u"])).replace("{victim}", victim["u"])
-                r = await _req(client, base + path, method=bola_cfg.get("method", "PUT"),
-                                headers=bearer(attacker["token"]), json=bola_cfg.get("body"))
-                success = r.ok and 200 <= r.status < 300
-                out.append(finding(
-                    id="D-BOLA-01", category="AUTHORIZATION", severity="CRITICAL", owasp="API1:2023", source="dynamic",
-                    title="BOLA dinâmico — agir sobre o objeto de outro usuário",
-                    status=STATUS.SKIP if not r.ok else STATUS.FAIL if success else STATUS.PASS,
-                    detail=("Falha ao requisitar." if not r.ok
-                            else f"O usuário \"{attacker['u']}\" executou {bola_cfg.get('method', 'PUT')} {path} sobre o recurso de \"{victim['u']}\" e recebeu {r.status} — BOLA confirmado (acessou objeto alheio)." if success
-                            else f"Tentativa de \"{attacker['u']}\" agir sobre o recurso de \"{victim['u']}\" foi negada ({r.status})."),
-                    recommendation="Validar que o dono do token é o dono do objeto antes de qualquer leitura/escrita.",
-                    evidence=(f"{bola_cfg.get('method', 'PUT')} {base}{path}\n"
-                              f"(autenticado como \"{attacker['u']}\"; o recurso pertence a \"{victim['u']}\")\n→ HTTP {r.status or '-'}"),
-                ))
+                if mutation_blocked(bola_method):
+                    out.append(finding(
+                        id="D-BOLA-01", category="AUTHORIZATION", severity="CRITICAL", owasp="API1:2023", source="dynamic",
+                        title="BOLA dinâmico — agir sobre o objeto de outro usuário", status=STATUS.SKIP, state=STATE.NOT_RUN,
+                        asset={"method": bola_method, "path": path},
+                        detail=f"O teste executaria {bola_method} no recurso de outro usuário (altera dados). Autorize testes que alteram dados no projeto (ambiente de homologação) para executá-lo.",
+                        data={"requiresLogin": True},
+                    ))
+                    path = None
+                if path is not None:
+                    r = await _req(client, base + path, method=bola_method,
+                                    headers=bearer(attacker["token"]), json=bola_cfg.get("body"))
+                    # controle: a mesma operação sobre um recurso que NÃO existe. Se também der 2xx, a API ignora o identificador
+                    # e o 2xx não prova acesso ao objeto alheio.
+                    ghost = bola_cfg["path"].replace("{victimId}", "sx_inexistente_" + _rand()).replace("{victim}", "sx_inexistente_" + _rand())
+                    ctl = await _req(client, base + ghost, method=bola_method, headers=bearer(attacker["token"]), json=bola_cfg.get("body"))
+                    success = r.ok and 200 <= r.status < 300
+                    control_also_ok = ctl.ok and 200 <= ctl.status < 300
+                    unauth = r.ok and r.status == 401
+                    state = ""
+                    if unauth:
+                        state = STATE.INCONCLUSIVE
+                    elif success and control_also_ok:
+                        state = STATE.LIKELY
+                    out.append(finding(
+                        id="D-BOLA-01", category="AUTHORIZATION", severity="CRITICAL", owasp="API1:2023", source="dynamic",
+                        title="BOLA dinâmico — agir sobre o objeto de outro usuário",
+                        status=STATUS.SKIP if (not r.ok or unauth) else STATUS.WARN if (success and control_also_ok) else STATUS.FAIL if success else STATUS.PASS,
+                        state=state, confidence=("indicative" if state == STATE.LIKELY else ""),
+                        asset={"method": bola_method, "path": path},
+                        detail=("Falha ao requisitar." if not r.ok
+                                else "O servidor respondeu 401 ao usuário de teste: o token não foi aceito, então o teste não consegue concluir se há controle de dono." if unauth
+                                else f"A operação em um recurso INEXISTENTE também retornou {ctl.status}: a API parece ignorar o identificador. O 2xx no recurso de \"{victim['u']}\" é um indício, não prova de acesso ao objeto alheio." if (success and control_also_ok)
+                                else f"O usuário \"{attacker['u']}\" executou {bola_method} {path} sobre o recurso de \"{victim['u']}\" e recebeu {r.status}, enquanto o mesmo pedido a um recurso inexistente foi recusado ({ctl.status}) — acesso a objeto alheio confirmado." if success
+                                else f"Tentativa de \"{attacker['u']}\" agir sobre o recurso de \"{victim['u']}\" foi negada ({r.status})."),
+                        recommendation="Validar que o dono do token é o dono do objeto antes de qualquer leitura/escrita.",
+                        evidence=(f"{bola_method} {base}{path}\n"
+                                  f"(autenticado como \"{attacker['u']}\"; o recurso pertence a \"{victim['u']}\")\n→ HTTP {r.status or '-'}\n"
+                                  f"controle (recurso inexistente) → HTTP {ctl.status or '-'}"),
+                        data={"requiresLogin": True},
+                    ))
 
         # ---------- API5: BFLA (usuário comum em função administrativa) ----------
         bfla_routes = target.get("bfla") or []
@@ -249,22 +302,43 @@ async def run_active_probes(target: dict) -> list[Finding]:
                         id=fid, category="AUTHORIZATION", severity="HIGH", owasp="API5:2023", source="dynamic",
                         status=STATUS.SKIP, title=title,
                         detail="Sem usuário de papel comum para testar — cadastre uma credencial com papel diferente de admin.",
+                        data={"requiresLogin": True},
+                    ))
+                    continue
+                if mutation_blocked(method):
+                    out.append(finding(
+                        id=fid, category="AUTHORIZATION", severity="HIGH", owasp="API5:2023", source="dynamic", title=title,
+                        status=STATUS.SKIP, state=STATE.NOT_RUN, asset={"method": method, "path": route["path"]},
+                        detail=f"O teste executaria {method} (altera dados). Autorize testes que alteram dados no projeto (ambiente de homologação) para executá-lo.",
+                        data={"requiresLogin": True},
                     ))
                     continue
                 r = await _req(client, url, method=method, headers=bearer(common["token"]), json=route.get("body"))
                 allowed = r.ok and 200 <= r.status < 300
+                unauth = r.ok and r.status == 401
                 out.append(finding(
                     id=fid, category="AUTHORIZATION", severity="HIGH", owasp="API5:2023", source="dynamic", title=title,
-                    status=STATUS.SKIP if not r.ok else STATUS.FAIL if allowed else STATUS.PASS,
+                    status=STATUS.SKIP if (not r.ok or unauth) else STATUS.FAIL if allowed else STATUS.PASS,
+                    state=(STATE.INCONCLUSIVE if unauth else ""),
+                    asset={"method": method, "path": route["path"]},
                     detail=("Falha ao requisitar." if not r.ok
+                            else "O servidor respondeu 401 mesmo com o token do usuário comum: não é possível concluir se a checagem de papel ocorre (um 403 seria a negação esperada)." if unauth
                             else f'O usuário "{common["u"]}" (papel "{common.get("role", "user")}") acessou a função administrativa e recebeu {r.status} — BFLA confirmado.' if allowed
                             else f'Usuário comum foi negado ({r.status}) na função administrativa.'),
                     recommendation="Validar o papel/permissão do usuário no servidor em toda rota administrativa (deny by default).",
                     evidence=f'{method} {url}\n(autenticado como "{common["u"]}", papel "{common.get("role", "user")}")\n→ HTTP {r.status or "-"}',
+                    data={"requiresLogin": True},
                 ))
 
         # ---------- API3: mass assignment (campo privilegiado) ----------
         mass = target.get("massAssignment")
+        if mass and mass.get("field") and auth.get("register") and not allow_mut:
+            out.append(finding(
+                id="D-MASS-01", category="INPUT_VALIDATION", severity="HIGH", owasp="API3:2023", source="dynamic",
+                title="Mass assignment — atribuição de campo privilegiado", status=STATUS.SKIP, state=STATE.NOT_RUN,
+                detail="O teste cria uma conta privilegiada no alvo (altera dados). Autorize testes que alteram dados no projeto (ambiente de homologação) para executá-lo.",
+                data={"requiresLogin": True},
+            ))
         if mass and mass.get("field") and can_register:
             field = mass["field"]
             mu = await make_user({field: True})
@@ -284,7 +358,10 @@ async def run_active_probes(target: dict) -> list[Finding]:
                 status=STATUS.SKIP if not mu["reg"].ok else STATUS.FAIL if escalated else STATUS.PASS,
                 detail=detail,
                 recommendation="Nunca aceitar campos sensíveis (admin/role/isAdmin) direto do payload; usar allowlist de campos no bind.",
-                evidence=f"{field} escalou" if escalated else "sem escalonamento",
+                evidence=(f"POST {base}{auth['register']} com \"{field}\": true no corpo\n"
+                          f"GET {base}{auth.get('protectedProbe', '')} → {mass.get('verifyMePath', f'data.{field}')} = {val if mu['token'] and auth.get('protectedProbe') else 'não verificado'}"),
+                asset={"method": "POST", "path": auth["register"]},
+                data={"requiresLogin": True},
             ))
 
     return out

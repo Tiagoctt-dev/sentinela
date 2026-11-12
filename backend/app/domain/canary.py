@@ -4,8 +4,10 @@
 
 import os
 import uuid
+from collections import OrderedDict
 
-_hits: set[str] = set()
+MAX_TOKENS = 5000
+_issued: "OrderedDict[str, bool]" = OrderedDict()
 
 
 def public_base() -> str:
@@ -13,7 +15,11 @@ def public_base() -> str:
 
 
 def new_token() -> str:
-    return uuid.uuid4().hex
+    token = uuid.uuid4().hex
+    _issued[token] = False
+    while len(_issued) > MAX_TOKENS:
+        _issued.popitem(last=False)
+    return token
 
 
 def url_for(token: str) -> str:
@@ -21,8 +27,10 @@ def url_for(token: str) -> str:
 
 
 def record(token: str) -> None:
-    _hits.add(token)
+    """Só registra tokens emitidos pelo Sentinela (impede encher a memória com tokens arbitrários)."""
+    if token in _issued:
+        _issued[token] = True
 
 
 def was_hit(token: str) -> bool:
-    return token in _hits
+    return _issued.get(token, False)

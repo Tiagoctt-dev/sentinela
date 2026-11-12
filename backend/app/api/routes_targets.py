@@ -2,12 +2,14 @@ import uuid
 from typing import Optional
 from urllib.parse import urlparse
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from ..db.models import TargetModel
 from ..db.session import SessionLocal, get_db
+from ..domain.spec_upload import parse_spec, summarize
+from ..netguard import TargetNotAllowed, validate_url
 from ..targets import TARGETS_DIR, TargetNotFound, load_target_config as _load_target_config
 
 router = APIRouter(prefix="/api/targets", tags=["targets"])
@@ -61,10 +63,11 @@ def get_or_create_target(db: Session, name: str) -> TargetModel:
 def get_or_create_url_target(db: Session, url: str) -> TargetModel:
     """Scan avulso: cadastra (ou reaproveita) um alvo custom a partir de uma
     URL, sem precisar preencher um formulário antes — mas já fica no CRUD."""
-    normalized = url.rstrip("/")
+    try:
+        normalized = validate_url(url)
+    except TargetNotAllowed as err:
+        raise HTTPException(400, str(err)) from err
     parsed = urlparse(normalized)
-    if parsed.scheme not in ("http", "https") or not parsed.netloc:
-        raise HTTPException(400, "URL inválida — inclua o protocolo, ex.: https://exemplo.com")
 
     custom = db.query(TargetModel).filter(TargetModel.source == "custom").all()
     existing = next((t for t in custom if t.config.get("baseUrl") == normalized), None)
@@ -80,7 +83,11 @@ def get_or_create_url_target(db: Session, url: str) -> TargetModel:
 
 
 def _serialize(t: TargetModel) -> dict:
-    return {"id": t.id, "name": t.name, "source": t.source, "config": t.config, "createdAt": t.created_at.isoformat()}
+    config = dict(t.config or {})
+    spec = config.pop("openapiSpec", None)  # a spec inteira não trafega na listagem
+    if isinstance(spec, dict):
+        config["openapiSpecSummary"] = summarize(spec)
+    return {"id": t.id, "name": t.name, "source": t.source, "config": config, "createdAt": t.created_at.isoformat()}
 
 
 class TargetCreate(BaseModel):
@@ -94,6 +101,7 @@ class TargetCreate(BaseModel):
     bfla: Optional[list] = None
     openapiUrl: Optional[str] = None
     wsdlUrl: Optional[str] = None
+    allowMutations: Optional[bool] = None
 
 
 class TargetUpdate(BaseModel):
@@ -107,13 +115,17 @@ class TargetUpdate(BaseModel):
     bfla: Optional[list] = None
     openapiUrl: Optional[str] = None
     wsdlUrl: Optional[str] = None
+    allowMutations: Optional[bool] = None
 
 
 def _build_config(body: TargetCreate) -> dict:
-    parsed = urlparse(body.baseUrl.rstrip("/"))
-    if parsed.scheme not in ("http", "https") or not parsed.netloc:
-        raise HTTPException(400, "baseUrl inválida — inclua o protocolo, ex.: https://exemplo.com")
-    config: dict = {"name": body.name, "description": body.description or "", "baseUrl": body.baseUrl.rstrip("/")}
+    try:
+        base_url = validate_url(body.baseUrl)
+    except TargetNotAllowed as err:
+        raise HTTPException(400, str(err)) from err
+    config: dict = {"name": body.name, "description": body.description or "", "baseUrl": base_url}
+    if body.allowMutations:
+        config["allowMutations"] = True
     if body.endpoints:
         config["endpoints"] = body.endpoints
     if body.auth:
@@ -170,10 +182,10 @@ def update_target(target_id: str, body: TargetUpdate, db: Session = Depends(get_
     if body.description is not None:
         config["description"] = body.description
     if body.baseUrl is not None:
-        parsed = urlparse(body.baseUrl.rstrip("/"))
-        if parsed.scheme not in ("http", "https") or not parsed.netloc:
-            raise HTTPException(400, "baseUrl inválida — inclua o protocolo, ex.: https://exemplo.com")
-        config["baseUrl"] = body.baseUrl.rstrip("/")
+        try:
+            config["baseUrl"] = validate_url(body.baseUrl)
+        except TargetNotAllowed as err:
+            raise HTTPException(400, str(err)) from err
     if body.endpoints is not None:
         config["endpoints"] = body.endpoints
     if body.auth is not None:
@@ -188,6 +200,8 @@ def update_target(target_id: str, body: TargetUpdate, db: Session = Depends(get_
         config["openapiUrl"] = body.openapiUrl.strip()
     if body.wsdlUrl is not None:
         config["wsdlUrl"] = body.wsdlUrl.strip()
+    if body.allowMutations is not None:
+        config["allowMutations"] = body.allowMutations
 
     t.config = config
     db.commit()
@@ -203,4 +217,34 @@ def delete_target(target_id: str, db: Session = Depends(get_db)):
     if t.source == "file":
         raise HTTPException(400, "Este é um alvo de exemplo (targets/*.json) — não pode ser excluído pela API.")
     db.delete(t)
+    db.commit()
+
+
+@router.put("/{target_id}/openapi-spec")
+async def upload_spec(target_id: str, request: Request, db: Session = Depends(get_db)):
+    """Importa a spec OpenAPI/Swagger (JSON ou YAML no corpo da requisição) para projetos sem spec publicada."""
+    t = db.query(TargetModel).filter(TargetModel.id == target_id).one_or_none()
+    if not t:
+        raise HTTPException(404, "Alvo não encontrado")
+    raw = await request.body()
+    try:
+        spec = parse_spec(raw.decode("utf-8", errors="replace"))
+    except ValueError as err:
+        raise HTTPException(400, str(err)) from err
+    config = dict(t.config or {})
+    config["openapiSpec"] = spec
+    t.config = config
+    db.commit()
+    db.refresh(t)
+    return _serialize(t)
+
+
+@router.delete("/{target_id}/openapi-spec", status_code=204)
+def remove_spec(target_id: str, db: Session = Depends(get_db)):
+    t = db.query(TargetModel).filter(TargetModel.id == target_id).one_or_none()
+    if not t:
+        raise HTTPException(404, "Alvo não encontrado")
+    config = dict(t.config or {})
+    config.pop("openapiSpec", None)
+    t.config = config
     db.commit()

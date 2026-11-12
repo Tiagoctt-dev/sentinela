@@ -3,7 +3,10 @@
   "description": "Alvo de teste — API com vulnerabilidades propositais (BOLA, broken authentication, excessive data exposure, mass assignment). Projeto OWASP-style para validar scanners.",
   "baseUrl": "http://localhost:5002",
   "endpoints": {
-    "protectedGet": ["/users/v1/_debug", "/users/v1"]
+    "protectedGet": [
+      "/users/v1/_debug",
+      "/users/v1"
+    ]
   },
   "auth": {
     "register": "/users/v1/register",
@@ -15,10 +18,13 @@
   "bola": {
     "method": "PUT",
     "path": "/users/v1/{victim}/email",
-    "body": { "email": "pwned-by-sentinela@attacker.test" }
+    "body": {
+      "email": "pwned-by-sentinela@attacker.test"
+    }
   },
   "massAssignment": {
     "field": "admin",
     "verifyMePath": "data.admin"
-  }
+  },
+  "allowMutations": true
 }

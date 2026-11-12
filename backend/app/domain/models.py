@@ -47,15 +47,35 @@ CATEGORY_ORDER = [
 
 
 class STATUS:
+    """Status legado (compatível com contratos antigos). O significado completo está em STATE."""
     PASS = "PASS"
     FAIL = "FAIL"
     WARN = "WARN"
     SKIP = "SKIP"
 
 
+class STATE:
+    """Estado do teste — o que realmente aconteceu. Distinto de severidade (impacto potencial) e de confiança (grau de prova)."""
+    VULNERABLE = "vulnerable"          # condição da falha observada e comprovada
+    LIKELY = "likely"                  # indício parcial; exige validação manual
+    INCONCLUSIVE = "inconclusive"      # executou, mas a evidência não permite concluir
+    ERROR = "error"                    # falha de execução (rede, timeout, resposta inválida)
+    PASSED = "passed"                  # sem a falha, DENTRO DO ESCOPO efetivamente verificado
+    NOT_RUN = "not_run"                # aplicável, mas pré-requisito ausente (credencial, config...)
+    NOT_APPLICABLE = "not_applicable"  # o alvo não tem a superfície testada
+
+
+STATES = (STATE.VULNERABLE, STATE.LIKELY, STATE.INCONCLUSIVE, STATE.ERROR, STATE.PASSED, STATE.NOT_RUN, STATE.NOT_APPLICABLE)
+STATE_TO_STATUS = {
+    STATE.VULNERABLE: STATUS.FAIL, STATE.LIKELY: STATUS.WARN, STATE.PASSED: STATUS.PASS,
+    STATE.INCONCLUSIVE: STATUS.SKIP, STATE.ERROR: STATUS.SKIP, STATE.NOT_RUN: STATUS.SKIP, STATE.NOT_APPLICABLE: STATUS.SKIP,
+}
+CONFIDENCE = ("confirmed", "indicative", "none")
+
+
 # Mapa achado → categoria do OWASP API Security Top 10 (2023).
 OWASP_API: dict[str, str] = {
-    "S-BOLA-01": "API1:2023", "S-AUTHZ-01": "API5:2023", "S-AUTHZ-02": "API5:2023",
+    "S-BOLA-01": "API1:2023", "S-AUTHZ-01": "API2:2023", "S-AUTHZ-02": "API2:2023",
     "D-AUTHZ-01": "API1:2023", "D-AUTHZ-02": "API1:2023",
     "S-TOKEN-01": "API2:2023", "S-TOKEN-02": "API2:2023", "S-OIDC-01": "API2:2023", "S-OIDC-02": "API2:2023",
     "S-INTEG-01": "API2:2023", "S-INTEG-02": "API5:2023", "D-INTEG-01": "API2:2023", "D-INTEG-02": "API5:2023",
@@ -82,6 +102,11 @@ class Finding:
     owasp: str = ""
     data: Optional[dict[str, Any]] = None
     ai_rec: Optional[dict[str, Any]] = field(default=None)
+    # --- modelo de resultado (preenchido por domain/classify.py quando ausente)
+    state: str = ""
+    confidence: str = ""
+    asset: Optional[dict[str, Any]] = None      # {"method", "path", "param", "url"}
+    meta: Optional[dict[str, Any]] = None       # texto editorial: resumo, impacto, cenário, limitações, referências...
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -97,6 +122,10 @@ class Finding:
             "owasp": self.owasp,
             "data": self.data,
             "aiRec": self.ai_rec,
+            "state": self.state,
+            "confidence": self.confidence,
+            "asset": self.asset,
+            "meta": self.meta,
         }
 
 
