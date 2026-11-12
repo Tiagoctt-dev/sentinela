@@ -1,0 +1,23 @@
+{
+ "previous": {
+  "id": "bc12d308-af52-4c6c-8eb4-f3db2f52bf5a",
+  "createdAt": "2026-11-12T17:17:08.327289",
+  "overall": 50,
+  "verdict": "Não conforme"
+ },
+ "delta": 0,
+ "new": [],
+ "fixed": [
+  {
+   "rowId": "994523fa-a5d1-4b8f-a2ba-69fcb3d94aa9",
+   "id": "D-BOLA-01",
+   "title": "BOLA dinâmico — agir sobre o objeto de outro usuário",
+   "severity": "CRITICAL",
+   "status": "FAIL",
+   "state": "vulnerable"
+  }
+ ],
+ "worse": [],
+ "persisting": 6,
+ "notComparable": []
+}

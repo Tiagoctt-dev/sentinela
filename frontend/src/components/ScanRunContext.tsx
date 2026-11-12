@@ -1,5 +1,5 @@
 import { createContext, ReactNode, useCallback, useContext, useEffect, useState } from "react";
-import { ScanDetail } from "../api/client";
+import { api, ScanDetail } from "../api/client";
 import Spinner from "./ui/Spinner";
 import { useToast } from "./ui/ToastContext";
 
@@ -46,17 +46,36 @@ export function ScanRunProvider({ children }: { children: ReactNode }) {
 
 function ScanRunBanner({ label, startedAt }: { label: string; startedAt: number }) {
   const [elapsed, setElapsed] = useState(() => Date.now() - startedAt);
+  const [step, setStep] = useState<{ label: string; done: number; total: number } | null>(null);
   useEffect(() => {
     const id = setInterval(() => setElapsed(Date.now() - startedAt), 250);
     return () => clearInterval(id);
   }, [startedAt]);
+  useEffect(() => {
+    let alive = true;
+    const poll = () => api.scanProgress().then((r) => alive && setStep(r.running[0] ?? null)).catch(() => undefined);
+    poll();
+    const id = setInterval(poll, 1500);
+    return () => {
+      alive = false;
+      clearInterval(id);
+    };
+  }, []);
 
   return (
-    <div className="scan-run-banner">
+    <div className="scan-run-banner" role="status">
       <Spinner />
-      <span>
-        Scan em andamento para <b>{label}</b>
-      </span>
+      <div className="scan-run-text">
+        <span>
+          Scan em andamento: <b>{label}</b>
+        </span>
+        {step && (
+          <>
+            <span className="scan-run-step">{step.label} · etapa {Math.min(step.done + 1, step.total)} de {step.total}</span>
+            <span className="scan-run-bar" aria-hidden="true"><i style={{ width: `${Math.round((step.done / step.total) * 100)}%` }} /></span>
+          </>
+        )}
+      </div>
       <span className="elapsed">{(elapsed / 1000).toFixed(0)}s</span>
     </div>
   );

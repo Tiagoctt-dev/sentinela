@@ -87,7 +87,7 @@ export default function UsersPage() {
       <div className="cred-list">
         {users.map((u) => (
           <div key={u.id} className="cred-row user-row">
-            <div style={{ minWidth: 0 }}>
+            <div className="min-0">
               <b>{u.name}</b> {u.id === me?.id && <span className="badge badge-custom">você</span>}{" "}
               {!u.active && <span className="badge badge-file">desativado</span>}
               <div className="muted small mono">

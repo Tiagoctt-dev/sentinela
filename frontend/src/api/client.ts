@@ -1,6 +1,42 @@
 export const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:8000";
 
 export type Resolution = "open" | "resolved" | "risk_accepted";
+export type Severity = "CRITICAL" | "HIGH" | "MEDIUM" | "LOW" | "INFO";
+/** Estado do teste: o que realmente aconteceu. Distinto de severidade (impacto) e de confiança (grau de prova). */
+export type FindingState = "vulnerable" | "likely" | "inconclusive" | "error" | "passed" | "not_run" | "not_applicable";
+export type Confidence = "confirmed" | "indicative" | "none";
+
+export interface Reference {
+  label: string;
+  url: string;
+}
+
+export interface FindingAsset {
+  method?: string;
+  path?: string;
+  param?: string;
+  url?: string;
+  host?: string;
+  httpStatus?: number;
+}
+
+/** Texto editorial da verificação (vem do backend; a UI não inventa conteúdo). */
+export interface FindingMeta {
+  policyId?: string;
+  headline?: string;
+  summary?: string;
+  technical?: string;
+  impact?: string;
+  exploitation?: string;
+  prerequisites?: string;
+  passWhen?: string;
+  failWhen?: string;
+  limitations?: string;
+  severityReason?: string;
+  scopeNote?: string;
+  proof?: "confirmed" | "indicative";
+  references?: Reference[];
+}
 
 export interface Finding {
   rowId: string;
@@ -8,16 +44,31 @@ export interface Finding {
   category: string;
   title: string;
   status: "PASS" | "FAIL" | "WARN" | "SKIP";
-  severity: "CRITICAL" | "HIGH" | "MEDIUM" | "LOW" | "INFO";
+  severity: Severity;
   detail: string;
   recommendation: string;
   evidence: string;
   source: string;
   owasp: string;
-  data: unknown;
+  data: { requiresLogin?: boolean; [k: string]: unknown } | null;
+  state: FindingState;
+  confidence: Confidence;
+  asset: FindingAsset | null;
+  meta: FindingMeta | null;
   aiRec?: Record<string, { provider: string; prioridade?: string; risco?: string; acao?: string }> | null;
   resolution: Resolution;
   resolutionNote?: string | null;
+  resolutionExpiresAt?: string | null;
+  resolutionBy?: string | null;
+}
+
+/** Histórico do mesmo achado (mesma política e mesmo ativo) nas últimas execuções do projeto. */
+export interface FindingHistory {
+  timeline: { scanId: string; createdAt: string; state: FindingState | null }[];
+  firstSeenAt: string | null;
+  occurrences: number;
+  regression: boolean;
+  windowScans: number;
 }
 
 export interface FindingWithContext extends Finding {
@@ -25,6 +76,7 @@ export interface FindingWithContext extends Finding {
   targetId: string;
   targetName: string;
   createdAt: string;
+  history?: FindingHistory;
 }
 
 export interface CategoryScore {
@@ -52,7 +104,31 @@ export interface PolicyResult {
   passed: boolean;
   reason: string;
   violations: string[];
+  pending?: string[];
 }
+
+export interface ScopeCheck {
+  id: string;
+  title: string;
+  reason: string;
+}
+
+/** O que foi e o que NÃO foi executado em um scan — base da cobertura. */
+export interface ScanScope {
+  mode: "external" | "authenticated";
+  credentials: { count: number; roles: string[] };
+  specFound: boolean;
+  codeAnalyzed: boolean;
+  mutationsAllowed: boolean;
+  checksPlanned: number;
+  checksExecuted: number;
+  coveragePct: number;
+  notRun: ScopeCheck[];
+  notApplicable: ScopeCheck[];
+  limitations: string[];
+}
+
+export type StateCounts = Record<FindingState, number>;
 
 export interface Policy {
   id: string;
@@ -70,11 +146,13 @@ export interface ScanSummary {
   mode: string;
   overall: number;
   verdict: string;
-  totals: { PASS: number; FAIL: number; WARN: number; SKIP: number };
+  totals: { PASS: number; FAIL: number; WARN: number; SKIP: number; states?: StateCounts };
   policy: PolicyResult | null;
   createdAt: string;
   createdBy?: string | null;
   origin?: string | null;
+  /** Resumo do escopo na lista; o escopo completo vem em ScanDetail. Nulo em scans anteriores ao registro de escopo. */
+  scope: { mode: ScanScope["mode"]; coveragePct: number } | ScanScope | null;
 }
 
 export interface ScanDetail extends ScanSummary {
@@ -82,6 +160,60 @@ export interface ScanDetail extends ScanSummary {
   ai: AiProviderResult[];
   policy: PolicyResult | null;
   findings: Finding[];
+  scope: ScanScope | null;
+}
+
+export interface RouteCheck {
+  checkId: string;
+  title: string;
+  findingRowId?: string;
+  severity: Severity;
+  state: FindingState;
+  httpStatus: number | null;
+  note: string | null;
+}
+
+export type RouteState = "vulnerable" | "likely" | "error" | "inconclusive" | "passed" | "not_run" | "not_tested";
+
+export interface RouteItem {
+  method: string;
+  path: string;
+  discovered: boolean;
+  known: boolean;
+  tested: boolean;
+  state: RouteState;
+  sources: string[];
+  checks: RouteCheck[];
+  label: string | null;
+}
+
+export interface RoutesView {
+  routes: RouteItem[];
+  counts: {
+    routes: number;
+    known: number;
+    tested: number;
+    pending: number;
+    byState: Record<RouteState, number>;
+    checks: Partial<Record<FindingState, number>>;
+  };
+  pendingChecks: ScopeCheck[];
+  notApplicableChecks: ScopeCheck[];
+}
+
+export interface Dashboard {
+  projects: number;
+  findings: {
+    bySeverity: Record<Severity, number>;
+    byState: StateCounts;
+    openConfirmedOrLikely: number;
+    byCategory: { category: string; vulnerable: number; likely: number }[];
+  };
+  coverage: { avgPct: number | null; scansWithScope: number };
+  routes: { routes: number; known: number; tested: number; pending: number } | null;
+  trend: { scanId: string; createdAt: string; score: number; vulnerable: number; likely: number; coveragePct: number | null; mode: string | null }[];
+  trendNote: string | null;
+  missing: string[];
 }
 
 export interface TargetConfig {
@@ -95,7 +227,9 @@ export interface TargetConfig {
   bfla?: { method: string; path: string }[];
   massAssignment?: Record<string, unknown>;
   openapiUrl?: string;
+  openapiSpecSummary?: { title: string | null; version: string | null; paths: number; operations: number };
   wsdlUrl?: string;
+  allowMutations?: boolean;
 }
 
 export interface TargetInfo {
@@ -116,15 +250,27 @@ export interface TargetInput {
   bfla?: TargetConfig["bfla"];
   openapiUrl?: string;
   wsdlUrl?: string;
+  allowMutations?: boolean;
 }
 
 export interface ScanComparison {
   previous: { id: string; createdAt: string; overall: number; verdict: string } | null;
   delta?: number;
-  new?: { rowId: string; id: string; title: string; severity: string; status: string }[];
-  fixed?: { rowId: string; id: string; title: string; severity: string; status: string }[];
-  worse?: { rowId: string; id: string; title: string; severity: string; status: string }[];
+  new?: ComparedFinding[];
+  fixed?: ComparedFinding[];
+  worse?: ComparedFinding[];
+  /** Estavam com problema antes e não puderam ser reavaliadas agora — NÃO contam como corrigidas. */
+  notComparable?: ComparedFinding[];
   persisting?: number;
+}
+
+export interface ComparedFinding {
+  rowId: string;
+  id: string;
+  title: string;
+  severity: Severity;
+  status: string;
+  state: FindingState;
 }
 
 export interface Credential {
@@ -184,6 +330,14 @@ export interface OwaspCheck {
   severity: Finding["severity"];
   how: string;
   needsConfig: boolean;
+  proof: "confirmed" | "indicative" | null;
+  objective: string | null;
+  prerequisites: string | null;
+  passWhen: string | null;
+  failWhen: string | null;
+  limitations: string | null;
+  severityReason: string | null;
+  references: Reference[];
 }
 
 export interface OwaspItem {
@@ -285,14 +439,19 @@ export interface Schedule {
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const token = getToken();
-  const res = await fetch(`${API_BASE}${path}`, {
-    ...init,
-    headers: {
-      "content-type": "application/json",
-      ...(token ? { authorization: `Bearer ${token}` } : {}),
-      ...(init?.headers || {}),
-    },
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}${path}`, {
+      ...init,
+      headers: {
+        "content-type": "application/json",
+        ...(token ? { authorization: `Bearer ${token}` } : {}),
+        ...(init?.headers || {}),
+      },
+    });
+  } catch {
+    throw new ApiError(0, "Não foi possível conectar ao servidor do Sentinela. Verifique se o serviço está no ar e tente de novo.");
+  }
   if (res.status === 401 && !path.startsWith("/api/auth/")) {
     clearToken();
     window.dispatchEvent(new Event("sentinela:unauthorized"));
@@ -306,10 +465,53 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     } catch {
       // corpo não é JSON — usa o texto cru
     }
-    throw new ApiError(res.status, message || `Erro ${res.status}`);
+    throw new ApiError(res.status, friendlyMessage(res.status, typeof message === "string" ? message : ""));
   }
   if (res.status === 204) return undefined as T;
   return res.json() as Promise<T>;
+}
+
+/** Mensagem útil para o usuário: usa o texto do servidor quando há, e explica o que fazer quando não há. */
+export function friendlyMessage(status: number, serverMessage: string): string {
+  const msg = serverMessage.trim();
+  if (msg && !msg.startsWith("<")) return msg;
+  if (status === 401) return "Sua sessão expirou. Entre novamente.";
+  if (status === 403) return "Seu perfil não tem permissão para esta ação. Fale com um administrador.";
+  if (status === 404) return "Não encontramos o que você pediu. Pode ter sido removido.";
+  if (status === 409) return "Outra operação está em andamento neste item. Aguarde terminar e tente de novo.";
+  if (status === 413) return "O arquivo é grande demais.";
+  if (status === 429) return "Muitas tentativas seguidas. Aguarde alguns minutos e tente de novo.";
+  if (status >= 500) return "O servidor teve um problema ao processar o pedido. Tente de novo em instantes; se persistir, avise a equipe.";
+  return `Não foi possível concluir (erro ${status}).`;
+}
+
+async function requestRaw(path: string, init?: RequestInit): Promise<Response> {
+  const token = getToken();
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}${path}`, { ...init, headers: { ...(token ? { authorization: `Bearer ${token}` } : {}), ...(init?.headers || {}) } });
+  } catch {
+    throw new ApiError(0, "Não foi possível conectar ao servidor do Sentinela. Verifique se o serviço está no ar e tente de novo.");
+  }
+  if (!res.ok) throw new ApiError(res.status, friendlyMessage(res.status, await res.text().catch(() => "")));
+  return res;
+}
+
+export interface Page<T> {
+  items: T[];
+  total: number;
+}
+
+async function requestPage<T>(path: string): Promise<Page<T>> {
+  const res = await requestRaw(path, { headers: { "content-type": "application/json" } });
+  const items = (await res.json()) as T[];
+  const total = Number(res.headers.get("x-total-count"));
+  return { items, total: Number.isFinite(total) && total > 0 ? total : items.length };
+}
+
+export interface RetentionStatus {
+  policy: { auditDays: number; scanDays: number; note: string };
+  stored: { auditEntries: number; scans: number; findings: number };
 }
 
 export const api = {
@@ -319,6 +521,9 @@ export const api = {
   login: (body: { email: string; password: string }) =>
     request<{ token: string; user: AuthUser }>("/api/auth/login", { method: "POST", body: JSON.stringify(body) }),
   me: () => request<AuthUser>("/api/auth/me"),
+  logoutServer: () => request<void>("/api/auth/logout", { method: "POST" }),
+  changePassword: (body: { currentPassword: string; newPassword: string }) =>
+    request<{ token: string; user: AuthUser }>("/api/auth/change-password", { method: "POST", body: JSON.stringify(body) }),
 
   listUsers: () => request<AppUser[]>("/api/users"),
   createUser: (body: { name: string; email: string; password: string; role: string }) =>
@@ -327,6 +532,9 @@ export const api = {
     request<AppUser>(`/api/users/${id}`, { method: "PUT", body: JSON.stringify(body) }),
   deleteUser: (id: string) => request<void>(`/api/users/${id}`, { method: "DELETE" }),
   listAudit: () => request<AuditEntry[]>("/api/audit"),
+  listAuditPage: (offset = 0, limit = 200) => requestPage<AuditEntry>(`/api/audit?limit=${limit}&offset=${offset}`),
+  getRetention: () => request<RetentionStatus>("/api/admin/retention"),
+  runRetention: () => request<{ expiredRiskAcceptances: number; removed: Record<string, number> }>("/api/admin/retention/run", { method: "POST" }),
 
   getSchedule: (targetId: string) => request<Schedule>(`/api/targets/${targetId}/schedule`),
   setSchedule: (targetId: string, intervalHours: number) =>
@@ -349,15 +557,28 @@ export const api = {
   getScan: (id: string) => request<ScanDetail>(`/api/scans/${id}`),
   compareScan: (id: string) => request<ScanComparison>(`/api/scans/${id}/compare`),
   deleteScan: (id: string) => request<void>(`/api/scans/${id}`, { method: "DELETE" }),
-  runScan: (body: { targetId?: string; target?: string; url?: string; static?: boolean; dynamic?: boolean; ai?: boolean }) =>
+  scanProgress: () => request<{ running: { targetId: string; label: string; done: number; total: number; startedAt: number }[] }>("/api/scans/progress"),
+  uploadSpec: (targetId: string, text: string) =>
+    request<TargetInfo>(`/api/targets/${targetId}/openapi-spec`, { method: "PUT", body: text, headers: { "content-type": "text/plain" } }),
+  removeSpec: (targetId: string) => request<void>(`/api/targets/${targetId}/openapi-spec`, { method: "DELETE" }),
+  /** Baixa o SARIF 2.1.0 do scan (com a sessão atual) e devolve o texto. */
+  scanSarif: async (id: string) => (await requestRaw(`/api/scans/${id}/sarif`)).text(),
+  runScan: (body: { targetId?: string; target?: string; url?: string; static?: boolean; dynamic?: boolean; ai?: boolean; profile?: "full" | "safe" }) =>
     request<ScanDetail>("/api/scans", { method: "POST", body: JSON.stringify(body) }),
 
-  listFindings: (params: { status?: string; severity?: string; resolution?: string; targetId?: string; q?: string } = {}) => {
+  scanRoutes: (id: string) => request<RoutesView>(`/api/scans/${id}/routes`),
+  getDashboard: (targetId?: string) => request<Dashboard>(`/api/dashboard${targetId ? `?targetId=${targetId}` : ""}`),
+
+  listFindings: (params: { status?: string; state?: string; confidence?: string; category?: string; severity?: string; resolution?: string; targetId?: string; q?: string } = {}) => {
     const qs = new URLSearchParams(Object.entries(params).filter(([, v]) => v) as [string, string][]).toString();
     return request<FindingWithContext[]>(`/api/findings${qs ? `?${qs}` : ""}`);
   },
+  countFindings: (params: { resolution?: string; targetId?: string } = {}) => {
+    const qs = new URLSearchParams(Object.entries(params).filter(([, v]) => v) as [string, string][]).toString();
+    return request<{ count: number }>(`/api/findings/count${qs ? `?${qs}` : ""}`);
+  },
   getFinding: (rowId: string) => request<FindingWithContext>(`/api/findings/${rowId}`),
-  updateFinding: (rowId: string, body: { resolution: Resolution; resolutionNote?: string }) =>
+  updateFinding: (rowId: string, body: { resolution: Resolution; resolutionNote?: string; expiresInDays?: number }) =>
     request<FindingWithContext>(`/api/findings/${rowId}`, { method: "PATCH", body: JSON.stringify(body) }),
 
   getStats: () => request<StatsSummary>("/api/stats/summary"),

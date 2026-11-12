@@ -1,162 +1,161 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
-import { api, Coverage, OwaspItem, PolicyCatalog } from "../api/client";
+import { api, Coverage, OwaspCheck, OwaspItem } from "../api/client";
+import AsyncView from "../components/ui/AsyncView";
 import { SevBadge } from "../components/ui/Badge";
-import { useToast } from "../components/ui/ToastContext";
+import PageHeader from "../components/ui/PageHeader";
+import { useAsync } from "../hooks/useAsync";
 
-const coverageLabel: Record<Coverage, { text: string; pill: string }> = {
-  coberto: { text: "coberto", pill: "pill-ok" },
-  parcial: { text: "cobertura parcial", pill: "pill-warn" },
-  nao_coberto: { text: "ainda não testado", pill: "pill-na" },
+const coverageLabel: Record<Coverage, { text: string; pill: string; help: string }> = {
+  coberto: { text: "Cobertura ampla", pill: "pill-ok", help: "Há verificações com prova direta cobrindo a superfície típica do risco." },
+  parcial: { text: "Cobertura parcial", pill: "pill-warn", help: "Há verificação, mas limitada a rotas configuradas, heurística, um único caso ou só indício." },
+  nao_coberto: { text: "Sem verificação", pill: "pill-na", help: "Nenhuma verificação implementada para este risco." },
 };
+
+function CheckDetail({ c }: { c: OwaspCheck }) {
+  return (
+    <div className="check-row">
+      <div className="check-top">
+        <span className="mono check-id">{c.id}</span>
+        <SevBadge severity={c.severity} />
+        <span className="badge badge-file">{c.kind === "static" ? "código" : "ao vivo"}</span>
+        {c.proof && (
+          <span className={`conf-badge conf-${c.proof}`} title="Quanto uma falha desta verificação prova">
+            {c.proof === "confirmed" ? "prova direta" : "indício"}
+          </span>
+        )}
+        {c.needsConfig && <span className="badge badge-custom" title="Precisa de rotas ou credenciais de teste no projeto; sem isso aparece como não executada.">requer configuração</span>}
+      </div>
+      <div className="check-title">{c.title}</div>
+      <div className="check-how">{c.how}</div>
+      <details className="check-more">
+        <summary>Critérios, pré-requisitos e limitações</summary>
+        <dl className="kv">
+          {c.objective && <div><dt>Objetivo</dt><dd>{c.objective}</dd></div>}
+          {c.prerequisites && <div><dt>Pré-requisitos</dt><dd>{c.prerequisites}</dd></div>}
+          {c.passWhen && <div><dt>Aprova quando</dt><dd>{c.passWhen}</dd></div>}
+          {c.failWhen && <div><dt>Reprova quando</dt><dd>{c.failWhen}</dd></div>}
+          {c.severityReason && <div><dt>Severidade</dt><dd>{c.severityReason}</dd></div>}
+          {c.limitations && <div><dt>Limitações</dt><dd>{c.limitations}</dd></div>}
+          {c.references.length > 0 && (
+            <div>
+              <dt>Referências</dt>
+              <dd>
+                <ul className="ref-list">
+                  {c.references.map((r) => (
+                    <li key={r.url}><a href={r.url} target="_blank" rel="noreferrer noopener">{r.label}</a></li>
+                  ))}
+                </ul>
+              </dd>
+            </div>
+          )}
+        </dl>
+      </details>
+    </div>
+  );
+}
 
 function ItemCard({ item, open, onToggle }: { item: OwaspItem; open: boolean; onToggle: () => void }) {
   const cov = coverageLabel[item.coverage];
   const { pass, fail, warn } = item.stats;
   return (
-    <div className="policy-card">
-      <div className="policy-card-head policy-toggle" onClick={onToggle} role="button" tabIndex={0}
-        onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && onToggle()} aria-expanded={open}>
-        <div style={{ minWidth: 0 }}>
-          <div className="policy-code mono">{item.id}</div>
-          <h3>{item.name}</h3>
-          <p>{item.description}</p>
-        </div>
-        <div className="policy-head-side">
-          <span className={`pill ${cov.pill}`}>{cov.text}</span>
-          {item.stats.open > 0 && <span className="pill pill-fail">{item.stats.open} aberto(s)</span>}
-          <span className="chev">{open ? "▾" : "▸"}</span>
-        </div>
-      </div>
+    <section className="policy-card">
+      <button className="policy-head" onClick={onToggle} aria-expanded={open}>
+        <span className="policy-head-main">
+          <span className="policy-code mono">{item.id}</span>
+          <span className="policy-name">{item.name}</span>
+          <span className="policy-desc">{item.description}</span>
+        </span>
+        <span className="policy-head-side">
+          <span className={`pill ${cov.pill}`} title={cov.help}>{cov.text}</span>
+          {item.stats.open > 0 && <span className="pill pill-fail">{item.stats.open} em aberto</span>}
+          <span className="chev" aria-hidden="true">{open ? "▾" : "▸"}</span>
+        </span>
+      </button>
 
       {open && (
         <div className="policy-body">
-          {item.coverageNote && <p className="policy-note">{item.coverageNote}</p>}
+          {item.coverageNote && <p className="policy-note"><b>Limites da cobertura:</b> {item.coverageNote}</p>}
 
           {item.checks.length > 0 && (
             <>
-              <div className="h2sub" style={{ marginTop: 14 }}>
-                Como o Sentinela testa ({item.checks.length} verificação(ões))
-              </div>
+              <h3 className="small-title">Verificações ({item.checks.length})</h3>
               <div className="check-list">
-                {item.checks.map((c) => (
-                  <div key={c.id} className="check-row">
-                    <div className="check-top">
-                      <span className="mono check-id">{c.id}</span>
-                      <SevBadge severity={c.severity} />
-                      <span className="badge badge-file">{c.kind === "static" ? "código" : "ao vivo"}</span>
-                      {c.needsConfig && <span className="badge badge-custom" title="Precisa de rotas/credenciais de teste no projeto; sem isso é pulada.">requer config</span>}
-                    </div>
-                    <div className="check-title">{c.title}</div>
-                    <div className="check-how">{c.how}</div>
-                  </div>
-                ))}
+                {item.checks.map((c) => <CheckDetail key={c.id} c={c} />)}
               </div>
             </>
           )}
 
-          {(pass + fail + warn > 0) && (
-            <div className="policy-stats" style={{ marginTop: 16 }}>
-              <div className="stat-card">
-                <div className="stat-label">Passou</div>
-                <div className="stat-value" style={{ color: "var(--ok)" }}>{pass}</div>
-              </div>
-              <div className="stat-card">
-                <div className="stat-label">Alertas</div>
-                <div className="stat-value" style={{ color: "var(--high)" }}>{warn}</div>
-              </div>
-              <div className="stat-card">
-                <div className="stat-label">Falhas</div>
-                <div className={`stat-value ${fail > 0 ? "crit" : ""}`}>{fail}</div>
-              </div>
+          {pass + fail + warn > 0 ? (
+            <div className="mini-stats">
+              <div><b>{pass}</b><span>aprovadas</span></div>
+              <div><b>{warn}</b><span>prováveis</span></div>
+              <div><b>{fail}</b><span>confirmadas</span></div>
             </div>
+          ) : (
+            item.checks.length > 0 && <p className="muted small">Nenhum scan avaliou este controle ainda.</p>
           )}
 
           {item.openFindings.length > 0 && (
             <>
-              <div className="h2sub" style={{ marginTop: 16 }}>Achados abertos neste controle (scan mais recente de cada projeto)</div>
-              <div className="policy-violation-list">
+              <h3 className="small-title">Achados em aberto neste controle</h3>
+              <ul className="policy-violation-list">
                 {item.openFindings.map((f) => (
-                  <Link key={f.rowId} to={`/achados/${f.rowId}`}>
-                    <SevBadge severity={f.severity} /> {f.title} — <span className="muted">{f.targetName}</span>
-                  </Link>
+                  <li key={f.rowId}>
+                    <SevBadge severity={f.severity} /> <Link to={`/achados/${f.rowId}`}>{f.title}</Link> <span className="muted">— {f.targetName}</span>
+                  </li>
                 ))}
-              </div>
+              </ul>
             </>
-          )}
-          {item.stats.pass + item.stats.fail + item.stats.warn === 0 && item.checks.length > 0 && (
-            <p className="muted small" style={{ marginTop: 12 }}>Nenhum scan avaliou este controle ainda.</p>
           )}
         </div>
       )}
-    </div>
+    </section>
   );
 }
 
 export default function PoliciesPage() {
-  const toast = useToast();
-  const [catalog, setCatalog] = useState<PolicyCatalog | null>(null);
-  const [loading, setLoading] = useState(true);
+  const catalog = useAsync(() => api.getPolicyCatalog(), []);
   const [openId, setOpenId] = useState<string | null>(null);
-
-  useEffect(() => {
-    api
-      .getPolicyCatalog()
-      .then(setCatalog)
-      .catch((e) => toast.error(e))
-      .finally(() => setLoading(false));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const c = catalog.data;
 
   return (
     <div>
-      <div className="page-head">
-        <div>
-          <h1>Políticas</h1>
-          <div className="eyebrow">
-            As regras que o Sentinela aplica em cada scan: quando um sistema é aprovado e quais riscos do OWASP API
-            Top 10 são testados.
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        title="Políticas"
+        description="O que o Sentinela verifica em cada scan: a regra de aprovação e a cobertura do OWASP API Security Top 10 (2023), com critérios e limitações de cada verificação."
+      />
+      <AsyncView loading={catalog.loading} error={catalog.error} onRetry={catalog.reload} hasData={!!c}>
+        {c && (
+          <>
+            <section className="panel" aria-labelledby="h-gate">
+              <h2 id="h-gate">Regra de aprovação — {c.gate.name}</h2>
+              <p>{c.gate.summary}</p>
+              <div className="verdict-grid">
+                {c.gate.verdicts.map((v) => (
+                  <div key={v.label} className="verdict-card">
+                    <span className="stat-label">{v.range}</span>
+                    <b>{v.label}</b>
+                  </div>
+                ))}
+              </div>
+              <ul className="policy-list">
+                {c.gate.scoring.map((line) => <li key={line}>{line}</li>)}
+              </ul>
+            </section>
 
-      {loading && <p className="muted">Carregando…</p>}
-
-      {catalog && (
-        <>
-          <h2 style={{ marginTop: 0 }}>1. Regra de aprovação</h2>
-          <div className="policy-card">
-            <h3>{catalog.gate.name}</h3>
-            <p>{catalog.gate.summary}</p>
-            <div className="verdict-grid">
-              {catalog.gate.verdicts.map((v) => (
-                <div key={v.label} className="stat-card">
-                  <div className="stat-label">{v.range}</div>
-                  <div style={{ fontWeight: 600 }}>{v.label}</div>
-                </div>
-              ))}
-            </div>
-            <ul className="policy-list">
-              {catalog.gate.scoring.map((line) => (
-                <li key={line}>{line}</li>
-              ))}
-            </ul>
-          </div>
-
-          <h2>2. Controles OWASP API Security Top 10 (2023)</h2>
-          <div className="h2sub">
-            {catalog.summary.covered} cobertos · {catalog.summary.partial} parcialmente · {catalog.summary.notCovered} ainda
-            não testados — {catalog.summary.checks} verificações no total. Clique num controle para ver o que é testado.
-          </div>
-          {catalog.items.map((item) => (
-            <ItemCard key={item.id} item={item} open={openId === item.id} onToggle={() => setOpenId(openId === item.id ? null : item.id)} />
-          ))}
-
-          <p className="muted small" style={{ marginTop: 18 }}>
-            Políticas customizadas (por projeto, severidade mínima, múltiplas condições) ainda não estão disponíveis.
-          </p>
-        </>
-      )}
+            <h2 className="section-heading">Cobertura do OWASP API Top 10 (2023)</h2>
+            <p className="panel-sub">
+              {c.summary.covered} com cobertura ampla · {c.summary.partial} parcial · {c.summary.notCovered} sem verificação — {c.summary.checks} verificações no total.
+              Nenhum item é marcado como coberto só por existir uma verificação com o nome correspondente: abra o item para ver o que é testado e o que não é.
+            </p>
+            {c.items.map((item) => (
+              <ItemCard key={item.id} item={item} open={openId === item.id} onToggle={() => setOpenId(openId === item.id ? null : item.id)} />
+            ))}
+            <p className="muted small">Políticas customizadas (por projeto, severidade mínima, múltiplas condições) ainda não estão disponíveis.</p>
+          </>
+        )}
+      </AsyncView>
     </div>
   );
 }

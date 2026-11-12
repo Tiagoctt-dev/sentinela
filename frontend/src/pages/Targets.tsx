@@ -6,6 +6,7 @@ import { useAuth } from "../components/AuthContext";
 import Button from "../components/ui/Button";
 import { Field, FormActions, FormGrid, FormSection } from "../components/ui/Form";
 import MoreMenu from "../components/ui/MoreMenu";
+import PageHeader from "../components/ui/PageHeader";
 import EmptyState from "../components/ui/EmptyState";
 import Modal from "../components/ui/Modal";
 import ProgressIndicator, { useElapsed } from "../components/ui/ProgressIndicator";
@@ -17,6 +18,7 @@ const emptyForm = {
   loginPath: "", tokenField: "token", protectedProbe: "", registerPath: "",
   openapiUrl: "", wsdlUrl: "",
   protectedRoutes: "", bolaMethod: "PUT", bolaPath: "", bolaBody: "", bflaRoutes: "",
+  allowMutations: false,
 };
 type FormState = typeof emptyForm;
 
@@ -31,6 +33,7 @@ function formFromTarget(t: TargetInfo): FormState {
     bolaMethod: c.bola?.method || "PUT", bolaPath: c.bola?.path || "",
     bolaBody: c.bola?.body ? JSON.stringify(c.bola.body) : "",
     bflaRoutes: (c.bfla || []).map((r) => `${r.method} ${r.path}`).join("\n"),
+    allowMutations: !!c.allowMutations,
   };
 }
 
@@ -48,6 +51,7 @@ function inputFromForm(f: FormState) {
   return {
     name: f.name, baseUrl: f.baseUrl, description: f.description,
     openapiUrl: f.openapiUrl.trim(), wsdlUrl: f.wsdlUrl.trim(),
+    allowMutations: f.allowMutations,
     endpoints: { protectedGet: routes },
     auth: hasAuth
       ? {
@@ -83,6 +87,10 @@ export default function TargetsPage() {
   const [deleteTarget, setDeleteTarget] = useState<TargetInfo | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [search, setSearch] = useState("");
+  const [specTarget, setSpecTarget] = useState<TargetInfo | null>(null);
+  const [specText, setSpecText] = useState("");
+  const [specFileName, setSpecFileName] = useState("");
+  const [specSaving, setSpecSaving] = useState(false);
   const [quickUrl, setQuickUrl] = useState("");
   const [quickRunning, setQuickRunning] = useState(false);
   const elapsed = useElapsed(runningId != null);
@@ -210,10 +218,54 @@ export default function TargetsPage() {
     }
   }
 
-  async function runScan(t: TargetInfo) {
+  function openSpec(t: TargetInfo) {
+    setSpecTarget(t);
+    setSpecText("");
+    setSpecFileName("");
+  }
+
+  async function pickSpecFile(file: File | undefined) {
+    if (!file) return;
+    if (file.size > 2_000_000) return toast.error("A spec tem mais de 2 MB. Envie um arquivo menor.");
+    setSpecText(await file.text());
+    setSpecFileName(file.name);
+  }
+
+  async function saveSpec() {
+    if (!specTarget) return;
+    setSpecSaving(true);
+    try {
+      const updated = await api.uploadSpec(specTarget.id, specText);
+      setTargets((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
+      setSpecTarget(null);
+      toast.success(`Spec importada: ${updated.config.openapiSpecSummary?.operations ?? 0} operações em ${updated.config.openapiSpecSummary?.paths ?? 0} caminhos.`);
+    } catch (e) {
+      toast.error(e);
+    } finally {
+      setSpecSaving(false);
+    }
+  }
+
+  async function dropSpec() {
+    if (!specTarget) return;
+    setSpecSaving(true);
+    try {
+      await api.removeSpec(specTarget.id);
+      const { openapiSpecSummary: _drop, ...rest } = specTarget.config;
+      void _drop;
+      setTargets((prev) => prev.map((t) => (t.id === specTarget.id ? { ...t, config: rest } : t)));
+      setSpecTarget(null);
+    } catch (e) {
+      toast.error(e);
+    } finally {
+      setSpecSaving(false);
+    }
+  }
+
+  async function runScan(t: TargetInfo, profile: "full" | "safe" = "full") {
     setRunningId(t.id);
     try {
-      const scan = await run(t.config.name || t.name, () => api.runScan({ targetId: t.id }));
+      const scan = await run(t.config.name || t.name, () => api.runScan({ targetId: t.id, profile }));
       navigate(`/scans/${scan.id}`);
     } catch {
       // erro já mostrado via toast pelo ScanRunContext
@@ -270,6 +322,8 @@ export default function TargetsPage() {
           </Button>
           <MoreMenu
             items={[
+              ...(canWrite && t.config.allowMutations ? [{ label: "Rodar scan seguro (sem alterar dados)", onClick: () => runScan(t, "safe") }] : []),
+              ...(canWrite && t.source === "custom" ? [{ label: t.config.openapiSpecSummary ? "Spec OpenAPI importada" : "Importar spec OpenAPI", onClick: () => openSpec(t) }] : []),
               ...(canWrite ? [{ label: "Agendar scans", onClick: () => openSchedule(t) }] : []),
               ...(isAdmin ? [{ label: "Usuários de teste", onClick: () => openCreds(t) }] : []),
               ...(canWrite && t.source === "custom" ? [{ label: "Editar projeto", onClick: () => openEdit(t) }] : []),
@@ -283,13 +337,11 @@ export default function TargetsPage() {
 
   return (
     <div>
-      <div className="page-head">
-        <div>
-          <h1>Projetos</h1>
-          <div className="eyebrow">Escolha um sistema e rode um scan. O resultado aparece em Scans; o que corrigir, em Achados.</div>
-        </div>
-        <Button onClick={openCreate}>+ Novo projeto</Button>
-      </div>
+      <PageHeader
+        title="Projetos"
+        description="Cadastre um sistema e rode um scan. O resultado aparece em Scans; o que corrigir, em Achados de segurança."
+        actions={canWrite ? <Button onClick={openCreate}>Novo projeto</Button> : undefined}
+      />
 
       <form className="quick-scan" onSubmit={runQuickScan}>
         <div>
@@ -320,14 +372,14 @@ export default function TargetsPage() {
         placeholder="Buscar projeto"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        style={{ width: "100%", marginBottom: 20 }}
+        className="search-wide"
       />
 
       {loading && <p className="muted">Carregando…</p>}
 
       {!loading && (
         <>
-          <h2 style={{ marginTop: 0 }}>Meus projetos</h2>
+          <h2 className="first-h2">Meus projetos</h2>
           <div className="target-list">
             {mine.map(renderCard)}
             {!mine.length && (
@@ -340,12 +392,21 @@ export default function TargetsPage() {
             )}
           </div>
 
-          <h2>Exemplos</h2>
-          <div className="h2sub">Alvos de demonstração para testar o scanner sem cadastrar nada.</div>
-          <div className="target-list">
-            {examples.map(renderCard)}
-            {!examples.length && term && <p className="muted">Nenhum exemplo bate com a busca.</p>}
-          </div>
+          {mine.length > 0 ? (
+            <details className="examples-fold">
+              <summary>Projetos de exemplo ({examples.length}) — para testar o scanner sem cadastrar nada</summary>
+              <div className="target-list">{examples.map(renderCard)}</div>
+            </details>
+          ) : (
+            <>
+              <h2>Exemplos</h2>
+              <div className="h2sub">Alvos de demonstração para testar o scanner sem cadastrar nada.</div>
+              <div className="target-list">
+                {examples.map(renderCard)}
+                {!examples.length && term && <p className="muted">Nenhum exemplo bate com a busca.</p>}
+              </div>
+            </>
+          )}
         </>
       )}
 
@@ -436,6 +497,19 @@ export default function TargetsPage() {
                   <textarea rows={3} value={form.bflaRoutes} onChange={(e) => setForm({ ...form, bflaRoutes: e.target.value })} placeholder={"GET /admin/usuarios\nDELETE /admin/contas/1"} />
                 </Field>
               </FormSection>
+
+              <FormSection title="Autorização para testes que alteram dados">
+                <label className="check-field">
+                  <input type="checkbox" checked={form.allowMutations} onChange={(e) => setForm({ ...form, allowMutations: e.target.checked })} />
+                  <span>
+                    <b>Este é um ambiente de homologação e autorizo testes que alteram dados.</b>
+                    <span className="field-hint">
+                      Sem esta autorização, BOLA e BFLA com PUT, PATCH, POST ou DELETE e o teste de mass assignment não são executados
+                      (aparecem como “não executados”). Com ela, o Sentinela pode alterar ou excluir registros de teste do alvo.
+                    </span>
+                  </span>
+                </label>
+              </FormSection>
             </div>
           </details>
 
@@ -448,6 +522,37 @@ export default function TargetsPage() {
             </Button>
           </FormActions>
         </form>
+      </Modal>
+
+      <Modal open={!!specTarget} onClose={() => setSpecTarget(null)} title={`Spec OpenAPI — ${specTarget?.config.name || ""}`}>
+        <div className="form">
+          <p className="form-section-desc">
+            Use quando a spec não é publicada pelo próprio serviço. Aceita JSON ou YAML (até 2 MB). O Sentinela passa a usá-la no lugar da busca
+            automática para descobrir as rotas.
+          </p>
+          {specTarget?.config.openapiSpecSummary && (
+            <p className="small">
+              Spec atual: <b>{specTarget.config.openapiSpecSummary.title || "sem título"}</b> {specTarget.config.openapiSpecSummary.version || ""} ·{" "}
+              {specTarget.config.openapiSpecSummary.operations} operações em {specTarget.config.openapiSpecSummary.paths} caminhos.
+            </p>
+          )}
+          <Field label="Arquivo da spec" hint={specFileName ? `Selecionado: ${specFileName}` : "openapi.json, swagger.json, openapi.yaml…"}>
+            <input type="file" accept=".json,.yaml,.yml,application/json,text/yaml" onChange={(e) => pickSpecFile(e.target.files?.[0])} />
+          </Field>
+          <FormActions>
+            {specTarget?.config.openapiSpecSummary && (
+              <Button type="button" variant="ghost" className="danger" onClick={dropSpec} disabled={specSaving}>
+                Remover spec
+              </Button>
+            )}
+            <Button type="button" variant="ghost" onClick={() => setSpecTarget(null)}>
+              Cancelar
+            </Button>
+            <Button type="button" onClick={saveSpec} loading={specSaving} loadingLabel="Importando…" disabled={!specText}>
+              Importar spec
+            </Button>
+          </FormActions>
+        </div>
       </Modal>
 
       <Modal open={!!schedTarget} onClose={() => setSchedTarget(null)} title={`Agendar scans — ${schedTarget?.config.name || ""}`}>
@@ -529,7 +634,7 @@ export default function TargetsPage() {
                 <Field label="Senha">
                   <input required type="password" autoComplete="new-password" value={credForm.password} onChange={(e) => setCredForm({ ...credForm, password: e.target.value })} />
                 </Field>
-                <Field label="ID do recurso" optional hint="Ex.: número da conta, usado no lugar de {victimId}." className="span-2">
+                <Field label="ID do recurso" optional hint="Ex.: número da conta. Usado no BOLA dinâmico (no lugar de {victimId}) e no BOLA automático das rotas /recurso/{id}." className="span-2">
                   <input value={credForm.resourceId} onChange={(e) => setCredForm({ ...credForm, resourceId: e.target.value })} />
                 </Field>
               </FormGrid>

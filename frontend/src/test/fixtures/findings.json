@@ -1,0 +1,840 @@
+[
+ {
+  "rowId": "c623b23f-e052-4a70-ad22-1f03798ee9a9",
+  "id": "D-JWT-01",
+  "scanId": "a75bf03a-557b-491a-9022-f46dfe5b62f6",
+  "targetId": "d2ae1ed9-9d4b-43dd-9f19-9d3b12d9bc5d",
+  "targetName": "Laboratório",
+  "category": "TOKEN_SESSION",
+  "title": "JWT — alg=none não é aceito",
+  "status": "FAIL",
+  "severity": "CRITICAL",
+  "detail": "Um token reassinado com alg=none (sem assinatura) foi ACEITO pela rota protegida — qualquer claim pode ser forjado.",
+  "recommendation": "Nunca honrar o alg vindo do header do token; fixar o algoritmo esperado (allowlist) na verificação.",
+  "evidence": "GET http://127.0.0.1:55633/me\n(Authorization: Bearer <token com alg=none e sem assinatura>)\n→ HTTP 200\ncontrole (sem credencial) → HTTP 401\nalg original do token: HS256",
+  "source": "dynamic",
+  "owasp": "API2:2023",
+  "data": {
+   "requiresLogin": true
+  },
+  "aiRec": null,
+  "state": "vulnerable",
+  "confidence": "confirmed",
+  "asset": {
+   "method": "GET",
+   "path": "/me",
+   "httpStatus": 200,
+   "host": "127.0.0.1:55633"
+  },
+  "meta": {
+   "policyId": "D-JWT-01",
+   "summary": "O servidor aceita token JWT sem assinatura (alg=none).",
+   "technical": "O Sentinela obtém um token válido, remonta o mesmo conteúdo com cabeçalho alg=none e sem assinatura e o envia à rota protegida.",
+   "impact": "Qualquer pessoa forja um token e assume a identidade de qualquer usuário.",
+   "exploitation": "O atacante cria um JWT com o usuário desejado, sem conhecer a chave, e o apresenta ao servidor.",
+   "prerequisites": "Login funcional e rota protegida configurada.",
+   "passWhen": "A rota protegida rejeita o token forjado.",
+   "failWhen": "A rota protegida responde 200 ao token forjado.",
+   "limitations": "Valida apenas a variante alg=none; outras falhas de verificação (confusão de algoritmo RS256/HS256) não são testadas.",
+   "severityReason": "Crítica: quebra total da autenticação.",
+   "proof": "confirmed",
+   "references": [
+    {
+     "label": "OWASP API Security Top 10 2023 — API2:2023",
+     "url": "https://owasp.org/API-Security/editions/2023/en/0xa2-broken-authentication/"
+    },
+    {
+     "label": "CWE-347",
+     "url": "https://cwe.mitre.org/data/definitions/347.html"
+    }
+   ],
+   "headline": "O servidor aceita token JWT sem assinatura (alg=none)."
+  },
+  "resolution": "open",
+  "resolutionNote": null,
+  "createdAt": "2026-11-12T17:17:09.484311",
+  "resolutionExpiresAt": null,
+  "resolutionBy": null
+ },
+ {
+  "rowId": "c8f21083-b629-41b1-b6a2-24aca926d3d1",
+  "id": "D-SPEC-02",
+  "scanId": "a75bf03a-557b-491a-9022-f46dfe5b62f6",
+  "targetId": "d2ae1ed9-9d4b-43dd-9f19-9d3b12d9bc5d",
+  "targetName": "Laboratório",
+  "category": "INPUT_VALIDATION",
+  "title": "Rotas públicas não expõem dados sensíveis",
+  "status": "FAIL",
+  "severity": "CRITICAL",
+  "detail": "1 rota(s) sem autenticação devolvem campos sensíveis. Por segurança, 1 rota(s) com nome de ação não foram chamadas: /createdb.",
+  "recommendation": "Exigir autenticação nessas rotas e devolver só campos necessários (allowlist de serialização); remover endpoints de debug.",
+  "evidence": "GET http://127.0.0.1:55633/publico/clientes → HTTP 200\n   campos sensíveis: clientes[0].cpf, clientes[0].password\n   {\"clientes\": [{\"nome\": \"Ana\", \"cpf\": \"[REDACTED]\", \"password\": \"[REDACTED]\"}]}",
+  "source": "dynamic",
+  "owasp": "API3:2023",
+  "data": {
+   "observations": [
+    {
+     "method": "GET",
+     "path": "/api/preview",
+     "httpStatus": 200,
+     "outcome": "clean",
+     "fields": []
+    },
+    {
+     "method": "GET",
+     "path": "/publico/clientes",
+     "httpStatus": 200,
+     "outcome": "sensitive",
+     "fields": [
+      "clientes[0].cpf",
+      "clientes[0].password"
+     ]
+    }
+   ]
+  },
+  "aiRec": null,
+  "state": "vulnerable",
+  "confidence": "confirmed",
+  "asset": {
+   "method": "GET",
+   "path": "/publico/clientes",
+   "url": "http://127.0.0.1:55633/publico/clientes",
+   "httpStatus": 200,
+   "host": "127.0.0.1:55633"
+  },
+  "meta": {
+   "policyId": "D-SPEC-02",
+   "summary": "Rota pública devolve campos sensíveis.",
+   "technical": "Para as rotas GET sem segurança declarada na spec, a resposta JSON é varrida por campos sensíveis com valor. Valores são mascarados na evidência.",
+   "impact": "Dados pessoais ou credenciais acessíveis sem autenticação.",
+   "exploitation": "Qualquer pessoa chama a rota e lê os dados.",
+   "prerequisites": "Spec OpenAPI acessível.",
+   "passWhen": "Nenhuma rota pública devolve campos sensíveis.",
+   "failWhen": "Rota pública com campo sensível preenchido.",
+   "limitations": "Só rotas GET sem parâmetro de caminho e sem nome de ação. Detecta por nome de campo; dado sensível com nome genérico não é visto.",
+   "severityReason": "Crítica: dado sensível acessível sem autenticação.",
+   "proof": "confirmed",
+   "references": [
+    {
+     "label": "OWASP API Security Top 10 2023 — API3:2023",
+     "url": "https://owasp.org/API-Security/editions/2023/en/0xa3-broken-object-property-level-authorization/"
+    },
+    {
+     "label": "CWE-200",
+     "url": "https://cwe.mitre.org/data/definitions/200.html"
+    },
+    {
+     "label": "CWE-359",
+     "url": "https://cwe.mitre.org/data/definitions/359.html"
+    }
+   ],
+   "headline": "Rota pública devolve campos sensíveis."
+  },
+  "resolution": "open",
+  "resolutionNote": null,
+  "createdAt": "2026-11-12T17:17:09.484311",
+  "resolutionExpiresAt": null,
+  "resolutionBy": null
+ },
+ {
+  "rowId": "e24dd51b-6dd8-4dfa-b5f7-42e177dcc400",
+  "id": "D-SPEC-02",
+  "scanId": "43a40d65-d0cb-4bf3-ac4c-084a8e7b2823",
+  "targetId": "126b9a22-4195-4ca5-a673-7b0b73df9050",
+  "targetName": "Somente URL",
+  "category": "INPUT_VALIDATION",
+  "title": "Rotas públicas não expõem dados sensíveis",
+  "status": "FAIL",
+  "severity": "CRITICAL",
+  "detail": "1 rota(s) sem autenticação devolvem campos sensíveis. Por segurança, 1 rota(s) com nome de ação não foram chamadas: /createdb.",
+  "recommendation": "Exigir autenticação nessas rotas e devolver só campos necessários (allowlist de serialização); remover endpoints de debug.",
+  "evidence": "GET http://127.0.0.1:55633/publico/clientes → HTTP 200\n   campos sensíveis: clientes[0].cpf, clientes[0].password\n   {\"clientes\": [{\"nome\": \"Ana\", \"cpf\": \"[REDACTED]\", \"password\": \"[REDACTED]\"}]}",
+  "source": "dynamic",
+  "owasp": "API3:2023",
+  "data": {
+   "observations": [
+    {
+     "method": "GET",
+     "path": "/api/preview",
+     "httpStatus": 200,
+     "outcome": "clean",
+     "fields": []
+    },
+    {
+     "method": "GET",
+     "path": "/publico/clientes",
+     "httpStatus": 200,
+     "outcome": "sensitive",
+     "fields": [
+      "clientes[0].cpf",
+      "clientes[0].password"
+     ]
+    }
+   ]
+  },
+  "aiRec": null,
+  "state": "vulnerable",
+  "confidence": "confirmed",
+  "asset": {
+   "method": "GET",
+   "path": "/publico/clientes",
+   "url": "http://127.0.0.1:55633/publico/clientes",
+   "httpStatus": 200,
+   "host": "127.0.0.1:55633"
+  },
+  "meta": {
+   "policyId": "D-SPEC-02",
+   "summary": "Rota pública devolve campos sensíveis.",
+   "technical": "Para as rotas GET sem segurança declarada na spec, a resposta JSON é varrida por campos sensíveis com valor. Valores são mascarados na evidência.",
+   "impact": "Dados pessoais ou credenciais acessíveis sem autenticação.",
+   "exploitation": "Qualquer pessoa chama a rota e lê os dados.",
+   "prerequisites": "Spec OpenAPI acessível.",
+   "passWhen": "Nenhuma rota pública devolve campos sensíveis.",
+   "failWhen": "Rota pública com campo sensível preenchido.",
+   "limitations": "Só rotas GET sem parâmetro de caminho e sem nome de ação. Detecta por nome de campo; dado sensível com nome genérico não é visto.",
+   "severityReason": "Crítica: dado sensível acessível sem autenticação.",
+   "proof": "confirmed",
+   "references": [
+    {
+     "label": "OWASP API Security Top 10 2023 — API3:2023",
+     "url": "https://owasp.org/API-Security/editions/2023/en/0xa3-broken-object-property-level-authorization/"
+    },
+    {
+     "label": "CWE-200",
+     "url": "https://cwe.mitre.org/data/definitions/200.html"
+    },
+    {
+     "label": "CWE-359",
+     "url": "https://cwe.mitre.org/data/definitions/359.html"
+    }
+   ],
+   "headline": "Rota pública devolve campos sensíveis."
+  },
+  "resolution": "open",
+  "resolutionNote": null,
+  "createdAt": "2026-11-12T17:17:10.862182",
+  "resolutionExpiresAt": null,
+  "resolutionBy": null
+ },
+ {
+  "rowId": "0e7a8b9d-a347-4f62-baba-9d1ff8b6176a",
+  "id": "D-FLOW-01",
+  "scanId": "43a40d65-d0cb-4bf3-ac4c-084a8e7b2823",
+  "targetId": "126b9a22-4195-4ca5-a673-7b0b73df9050",
+  "targetName": "Somente URL",
+  "category": "AUTHORIZATION",
+  "title": "Fluxos de negócio sensíveis têm limite anti-automação documentado",
+  "status": "WARN",
+  "severity": "MEDIUM",
+  "detail": "1 de 1 fluxo(s) sensíveis não documentam resposta 429 / limite de uso.",
+  "recommendation": "Aplicar rate limit/quotas e proteção anti-automação (CAPTCHA, device binding, limites por conta) nos fluxos de transferência, cadastro, OTP e reset.",
+  "evidence": "POST /api/transferencias",
+  "source": "dynamic",
+  "owasp": "API6:2023",
+  "data": {
+   "observations": [
+    {
+     "method": "POST",
+     "path": "/api/transferencias",
+     "httpStatus": null,
+     "outcome": "undocumented"
+    }
+   ],
+   "documentationOnly": true
+  },
+  "aiRec": null,
+  "state": "likely",
+  "confidence": "indicative",
+  "asset": {
+   "method": "POST",
+   "path": "/api/transferencias",
+   "url": "/api/transferencias",
+   "host": "127.0.0.1:55633"
+  },
+  "meta": {
+   "policyId": "D-FLOW-01",
+   "summary": "Fluxos sensíveis não documentam limite de uso.",
+   "technical": "Identifica na spec operações como transferência, pagamento, cadastro, OTP e reset e verifica se documentam resposta 429.",
+   "impact": "Automação abusiva de fluxos de negócio.",
+   "exploitation": "Uso de scripts para repetir o fluxo.",
+   "prerequisites": "Spec OpenAPI acessível.",
+   "passWhen": "Os fluxos documentam resposta 429.",
+   "failWhen": "Fluxos sensíveis sem resposta 429 documentada.",
+   "limitations": "Avalia a documentação, não o comportamento real. O limite pode existir e não estar documentado.",
+   "severityReason": "Média: é uma lacuna de contrato, não exploração comprovada.",
+   "proof": "indicative",
+   "references": [
+    {
+     "label": "OWASP API Security Top 10 2023 — API6:2023",
+     "url": "https://owasp.org/API-Security/editions/2023/en/0xa6-unrestricted-access-to-sensitive-business-flows/"
+    },
+    {
+     "label": "CWE-799",
+     "url": "https://cwe.mitre.org/data/definitions/799.html"
+    }
+   ],
+   "headline": "Fluxos sensíveis não documentam limite de uso."
+  },
+  "resolution": "open",
+  "resolutionNote": null,
+  "createdAt": "2026-11-12T17:17:10.862182",
+  "resolutionExpiresAt": null,
+  "resolutionBy": null
+ },
+ {
+  "rowId": "b129b2f8-87b0-4b6a-9ece-a65b79891678",
+  "id": "D-FLOW-01",
+  "scanId": "a75bf03a-557b-491a-9022-f46dfe5b62f6",
+  "targetId": "d2ae1ed9-9d4b-43dd-9f19-9d3b12d9bc5d",
+  "targetName": "Laboratório",
+  "category": "AUTHORIZATION",
+  "title": "Fluxos de negócio sensíveis têm limite anti-automação documentado",
+  "status": "WARN",
+  "severity": "MEDIUM",
+  "detail": "1 de 1 fluxo(s) sensíveis não documentam resposta 429 / limite de uso.",
+  "recommendation": "Aplicar rate limit/quotas e proteção anti-automação (CAPTCHA, device binding, limites por conta) nos fluxos de transferência, cadastro, OTP e reset.",
+  "evidence": "POST /api/transferencias",
+  "source": "dynamic",
+  "owasp": "API6:2023",
+  "data": {
+   "observations": [
+    {
+     "method": "POST",
+     "path": "/api/transferencias",
+     "httpStatus": null,
+     "outcome": "undocumented"
+    }
+   ],
+   "documentationOnly": true
+  },
+  "aiRec": null,
+  "state": "likely",
+  "confidence": "indicative",
+  "asset": {
+   "method": "POST",
+   "path": "/api/transferencias",
+   "url": "/api/transferencias",
+   "host": "127.0.0.1:55633"
+  },
+  "meta": {
+   "policyId": "D-FLOW-01",
+   "summary": "Fluxos sensíveis não documentam limite de uso.",
+   "technical": "Identifica na spec operações como transferência, pagamento, cadastro, OTP e reset e verifica se documentam resposta 429.",
+   "impact": "Automação abusiva de fluxos de negócio.",
+   "exploitation": "Uso de scripts para repetir o fluxo.",
+   "prerequisites": "Spec OpenAPI acessível.",
+   "passWhen": "Os fluxos documentam resposta 429.",
+   "failWhen": "Fluxos sensíveis sem resposta 429 documentada.",
+   "limitations": "Avalia a documentação, não o comportamento real. O limite pode existir e não estar documentado.",
+   "severityReason": "Média: é uma lacuna de contrato, não exploração comprovada.",
+   "proof": "indicative",
+   "references": [
+    {
+     "label": "OWASP API Security Top 10 2023 — API6:2023",
+     "url": "https://owasp.org/API-Security/editions/2023/en/0xa6-unrestricted-access-to-sensitive-business-flows/"
+    },
+    {
+     "label": "CWE-799",
+     "url": "https://cwe.mitre.org/data/definitions/799.html"
+    }
+   ],
+   "headline": "Fluxos sensíveis não documentam limite de uso."
+  },
+  "resolution": "open",
+  "resolutionNote": null,
+  "createdAt": "2026-11-12T17:17:09.484311",
+  "resolutionExpiresAt": null,
+  "resolutionBy": null
+ },
+ {
+  "rowId": "bf33e93b-b497-4259-9121-e58047cf2f18",
+  "id": "D-FLOW-02",
+  "scanId": "a75bf03a-557b-491a-9022-f46dfe5b62f6",
+  "targetId": "d2ae1ed9-9d4b-43dd-9f19-9d3b12d9bc5d",
+  "targetName": "Laboratório",
+  "category": "TOKEN_SESSION",
+  "title": "Login protegido contra força bruta",
+  "status": "WARN",
+  "severity": "MEDIUM",
+  "detail": "12 tentativas de login inválidas seguidas não foram limitadas (sem 429/423/Retry-After).",
+  "recommendation": "Limitar tentativas por IP/conta, aplicar atraso progressivo/bloqueio temporário e alertar sobre credential stuffing.",
+  "evidence": "POST http://127.0.0.1:55633/login × 12 (usuário inexistente)\n→ HTTP [401]",
+  "source": "dynamic",
+  "owasp": "API6:2023",
+  "data": {
+   "observations": [
+    {
+     "method": "POST",
+     "path": "/login",
+     "httpStatus": 401,
+     "outcome": "accepted"
+    },
+    {
+     "method": "POST",
+     "path": "/login",
+     "httpStatus": 401,
+     "outcome": "accepted"
+    },
+    {
+     "method": "POST",
+     "path": "/login",
+     "httpStatus": 401,
+     "outcome": "accepted"
+    },
+    {
+     "method": "POST",
+     "path": "/login",
+     "httpStatus": 401,
+     "outcome": "accepted"
+    },
+    {
+     "method": "POST",
+     "path": "/login",
+     "httpStatus": 401,
+     "outcome": "accepted"
+    },
+    {
+     "method": "POST",
+     "path": "/login",
+     "httpStatus": 401,
+     "outcome": "accepted"
+    },
+    {
+     "method": "POST",
+     "path": "/login",
+     "httpStatus": 401,
+     "outcome": "accepted"
+    },
+    {
+     "method": "POST",
+     "path": "/login",
+     "httpStatus": 401,
+     "outcome": "accepted"
+    },
+    {
+     "method": "POST",
+     "path": "/login",
+     "httpStatus": 401,
+     "outcome": "accepted"
+    },
+    {
+     "method": "POST",
+     "path": "/login",
+     "httpStatus": 401,
+     "outcome": "accepted"
+    },
+    {
+     "method": "POST",
+     "path": "/login",
+     "httpStatus": 401,
+     "outcome": "accepted"
+    },
+    {
+     "method": "POST",
+     "path": "/login",
+     "httpStatus": 401,
+     "outcome": "accepted"
+    }
+   ]
+  },
+  "aiRec": null,
+  "state": "likely",
+  "confidence": "indicative",
+  "asset": {
+   "method": "POST",
+   "path": "/login",
+   "url": "http://127.0.0.1:55633/login",
+   "host": "127.0.0.1:55633"
+  },
+  "meta": {
+   "policyId": "D-FLOW-02",
+   "summary": "O login não limitou tentativas inválidas repetidas.",
+   "technical": "Faz 12 tentativas com um usuário inexistente e procura 429, 423 ou Retry-After. Nenhuma conta real é afetada.",
+   "impact": "Força bruta e credential stuffing.",
+   "exploitation": "Tentativa automática de senhas.",
+   "prerequisites": "Rota de login configurada.",
+   "passWhen": "O login limita ou bloqueia as tentativas.",
+   "failWhen": "Nenhuma das 12 tentativas foi limitada.",
+   "limitations": "Usuário inexistente pode ser tratado diferente de usuário real; 12 tentativas podem ser poucas.",
+   "severityReason": "Média: indício sem exploração demonstrada.",
+   "proof": "indicative",
+   "references": [
+    {
+     "label": "OWASP API Security Top 10 2023 — API6:2023",
+     "url": "https://owasp.org/API-Security/editions/2023/en/0xa6-unrestricted-access-to-sensitive-business-flows/"
+    },
+    {
+     "label": "CWE-307",
+     "url": "https://cwe.mitre.org/data/definitions/307.html"
+    },
+    {
+     "label": "CWE-799",
+     "url": "https://cwe.mitre.org/data/definitions/799.html"
+    }
+   ],
+   "headline": "O login não limitou tentativas inválidas repetidas."
+  },
+  "resolution": "open",
+  "resolutionNote": null,
+  "createdAt": "2026-11-12T17:17:09.484311",
+  "resolutionExpiresAt": null,
+  "resolutionBy": null
+ },
+ {
+  "rowId": "88f649f8-e71d-4d69-b770-a2fbeb55440f",
+  "id": "D-RATE-01",
+  "scanId": "43a40d65-d0cb-4bf3-ac4c-084a8e7b2823",
+  "targetId": "126b9a22-4195-4ca5-a673-7b0b73df9050",
+  "targetName": "Somente URL",
+  "category": "TRANSPORT",
+  "title": "Rate limiting — throttling sob rajada de requisições",
+  "status": "WARN",
+  "severity": "MEDIUM",
+  "detail": "20 requisições seguidas em rajada, nenhuma bloqueada por rate limit.",
+  "recommendation": "Aplicar rate limiting/quota por IP ou por token em endpoints custosos ou sensíveis (OWASP API4).",
+  "evidence": "GET http://127.0.0.1:55633/ × 20\n→ HTTP [200]",
+  "source": "dynamic",
+  "owasp": "API4:2023",
+  "data": null,
+  "aiRec": null,
+  "state": "likely",
+  "confidence": "indicative",
+  "asset": {
+   "method": "GET",
+   "path": "/",
+   "host": "127.0.0.1:55633"
+  },
+  "meta": {
+   "policyId": "D-RATE-01",
+   "summary": "Não houve limitação de requisições em uma rajada de 20.",
+   "technical": "Envia 20 requisições seguidas à raiz do alvo e procura resposta 429 ou cabeçalhos de limite.",
+   "impact": "Abuso de recursos, força bruta e custo elevado.",
+   "exploitation": "Automação de requisições em volume.",
+   "prerequisites": "Alvo respondendo.",
+   "passWhen": "Alguma resposta 429 (throttling) na rajada.",
+   "failWhen": "Nenhuma das 20 requisições foi limitada.",
+   "limitations": "20 requisições podem estar abaixo do limite real do serviço; a raiz pode não ser a rota limitada. É indício, não prova.",
+   "severityReason": "Média: ausência de limite não é, isoladamente, exploração.",
+   "proof": "indicative",
+   "references": [
+    {
+     "label": "OWASP API Security Top 10 2023 — API4:2023",
+     "url": "https://owasp.org/API-Security/editions/2023/en/0xa4-unrestricted-resource-consumption/"
+    },
+    {
+     "label": "CWE-770",
+     "url": "https://cwe.mitre.org/data/definitions/770.html"
+    }
+   ],
+   "headline": "Não houve limitação de requisições em uma rajada de 20."
+  },
+  "resolution": "open",
+  "resolutionNote": null,
+  "createdAt": "2026-11-12T17:17:10.862182",
+  "resolutionExpiresAt": null,
+  "resolutionBy": null
+ },
+ {
+  "rowId": "80a7d941-a79b-44e8-ae97-a556abe5d07b",
+  "id": "D-DISC-01",
+  "scanId": "43a40d65-d0cb-4bf3-ac4c-084a8e7b2823",
+  "targetId": "126b9a22-4195-4ca5-a673-7b0b73df9050",
+  "targetName": "Somente URL",
+  "category": "INVENTORY",
+  "title": "Discovery de endpoints (spec OpenAPI/Swagger)",
+  "status": "WARN",
+  "severity": "LOW",
+  "detail": "Spec encontrada em /openapi.json: 6 endpoint(s) documentados. 6 não constam no target configurado — possíveis shadow/zombie APIs: /admin/usuarios, /api/contas, /api/preview, /api/transferencias, /createdb, /publico/clientes.",
+  "recommendation": "Toda API documentada na spec deve estar mapeada e monitorada; specs desatualizadas ou endpoints fora do inventário são sinal de API9:2023 (Improper Inventory Management).",
+  "evidence": "6 endpoint(s) · 6 fora do inventário",
+  "source": "dynamic",
+  "owasp": "API9:2023",
+  "data": {
+   "type": "discovery",
+   "source": "dynamic",
+   "specPath": "/openapi.json",
+   "endpoints": [
+    {
+     "path": "/admin/usuarios",
+     "methods": [
+      "GET"
+     ]
+    },
+    {
+     "path": "/api/contas",
+     "methods": [
+      "GET"
+     ]
+    },
+    {
+     "path": "/api/preview",
+     "methods": [
+      "GET"
+     ]
+    },
+    {
+     "path": "/api/transferencias",
+     "methods": [
+      "POST"
+     ]
+    },
+    {
+     "path": "/createdb",
+     "methods": [
+      "GET"
+     ]
+    },
+    {
+     "path": "/publico/clientes",
+     "methods": [
+      "GET"
+     ]
+    }
+   ],
+   "unconfigured": [
+    "/admin/usuarios",
+    "/api/contas",
+    "/api/preview",
+    "/api/transferencias",
+    "/createdb",
+    "/publico/clientes"
+   ]
+  },
+  "aiRec": null,
+  "state": "likely",
+  "confidence": "indicative",
+  "asset": {
+   "host": "127.0.0.1:55633"
+  },
+  "meta": {
+   "policyId": "D-DISC-01",
+   "summary": "Endpoints da spec fora do inventário do projeto.",
+   "technical": "Procura a spec OpenAPI/Swagger em caminhos conhecidos e compara com as rotas configuradas.",
+   "impact": "Endpoints esquecidos (shadow/zombie) fora do radar de segurança.",
+   "exploitation": "Uso de rotas antigas ou não monitoradas.",
+   "prerequisites": "Spec acessível.",
+   "passWhen": "Todos os endpoints da spec estão no inventário.",
+   "failWhen": "Endpoints da spec fora do inventário (alerta).",
+   "limitations": "Se a spec não for encontrada, nada é concluído (teste não executado).",
+   "severityReason": "Baixa.",
+   "proof": "indicative",
+   "references": [
+    {
+     "label": "OWASP API Security Top 10 2023 — API9:2023",
+     "url": "https://owasp.org/API-Security/editions/2023/en/0xa9-improper-inventory-management/"
+    }
+   ],
+   "headline": "Endpoints da spec fora do inventário do projeto."
+  },
+  "resolution": "open",
+  "resolutionNote": null,
+  "createdAt": "2026-11-12T17:17:10.862182",
+  "resolutionExpiresAt": null,
+  "resolutionBy": null
+ },
+ {
+  "rowId": "dda449f0-bb53-42df-9f20-e78c32bd0cc6",
+  "id": "D-DISC-01",
+  "scanId": "a75bf03a-557b-491a-9022-f46dfe5b62f6",
+  "targetId": "d2ae1ed9-9d4b-43dd-9f19-9d3b12d9bc5d",
+  "targetName": "Laboratório",
+  "category": "INVENTORY",
+  "title": "Discovery de endpoints (spec OpenAPI/Swagger)",
+  "status": "WARN",
+  "severity": "LOW",
+  "detail": "Spec encontrada em /openapi.json: 6 endpoint(s) documentados. 5 não constam no target configurado — possíveis shadow/zombie APIs: /admin/usuarios, /api/preview, /api/transferencias, /createdb, /publico/clientes.",
+  "recommendation": "Toda API documentada na spec deve estar mapeada e monitorada; specs desatualizadas ou endpoints fora do inventário são sinal de API9:2023 (Improper Inventory Management).",
+  "evidence": "6 endpoint(s) · 5 fora do inventário",
+  "source": "dynamic",
+  "owasp": "API9:2023",
+  "data": {
+   "type": "discovery",
+   "source": "dynamic",
+   "specPath": "/openapi.json",
+   "endpoints": [
+    {
+     "path": "/admin/usuarios",
+     "methods": [
+      "GET"
+     ]
+    },
+    {
+     "path": "/api/contas",
+     "methods": [
+      "GET"
+     ]
+    },
+    {
+     "path": "/api/preview",
+     "methods": [
+      "GET"
+     ]
+    },
+    {
+     "path": "/api/transferencias",
+     "methods": [
+      "POST"
+     ]
+    },
+    {
+     "path": "/createdb",
+     "methods": [
+      "GET"
+     ]
+    },
+    {
+     "path": "/publico/clientes",
+     "methods": [
+      "GET"
+     ]
+    }
+   ],
+   "unconfigured": [
+    "/admin/usuarios",
+    "/api/preview",
+    "/api/transferencias",
+    "/createdb",
+    "/publico/clientes"
+   ]
+  },
+  "aiRec": null,
+  "state": "likely",
+  "confidence": "indicative",
+  "asset": {
+   "host": "127.0.0.1:55633"
+  },
+  "meta": {
+   "policyId": "D-DISC-01",
+   "summary": "Endpoints da spec fora do inventário do projeto.",
+   "technical": "Procura a spec OpenAPI/Swagger em caminhos conhecidos e compara com as rotas configuradas.",
+   "impact": "Endpoints esquecidos (shadow/zombie) fora do radar de segurança.",
+   "exploitation": "Uso de rotas antigas ou não monitoradas.",
+   "prerequisites": "Spec acessível.",
+   "passWhen": "Todos os endpoints da spec estão no inventário.",
+   "failWhen": "Endpoints da spec fora do inventário (alerta).",
+   "limitations": "Se a spec não for encontrada, nada é concluído (teste não executado).",
+   "severityReason": "Baixa.",
+   "proof": "indicative",
+   "references": [
+    {
+     "label": "OWASP API Security Top 10 2023 — API9:2023",
+     "url": "https://owasp.org/API-Security/editions/2023/en/0xa9-improper-inventory-management/"
+    }
+   ],
+   "headline": "Endpoints da spec fora do inventário do projeto."
+  },
+  "resolution": "open",
+  "resolutionNote": null,
+  "createdAt": "2026-11-12T17:17:09.484311",
+  "resolutionExpiresAt": null,
+  "resolutionBy": null
+ },
+ {
+  "rowId": "4a9233db-c714-4ca5-805a-bedfb3ebaae0",
+  "id": "D-TLS-01",
+  "scanId": "43a40d65-d0cb-4bf3-ac4c-084a8e7b2823",
+  "targetId": "126b9a22-4195-4ca5-a673-7b0b73df9050",
+  "targetName": "Somente URL",
+  "category": "TRANSPORT",
+  "title": "Tráfego sobre HTTPS",
+  "status": "WARN",
+  "severity": "LOW",
+  "detail": "Alvo em HTTP (ambiente de desenvolvimento). Em produção, exigir HTTPS/HSTS.",
+  "recommendation": "Forçar HTTPS e redirecionar HTTP→HTTPS em produção.",
+  "evidence": "URL base: http://127.0.0.1:55633",
+  "source": "dynamic",
+  "owasp": "API8:2023",
+  "data": null,
+  "aiRec": null,
+  "state": "vulnerable",
+  "confidence": "confirmed",
+  "asset": {
+   "method": "GET",
+   "path": "/",
+   "host": "127.0.0.1:55633"
+  },
+  "meta": {
+   "policyId": "D-TLS-01",
+   "summary": "O alvo é acessado por HTTP, sem TLS.",
+   "technical": "Verifica se a URL base usa https://.",
+   "impact": "Tráfego legível e alterável na rede.",
+   "exploitation": "Interceptação na rede (MITM).",
+   "prerequisites": "Nenhum.",
+   "passWhen": "URL base em HTTPS.",
+   "failWhen": "URL base em HTTP.",
+   "limitations": "Em ambiente local ou de desenvolvimento HTTP é esperado; a avaliação vale para produção.",
+   "severityReason": "Baixa em desenvolvimento; alta em produção.",
+   "proof": "confirmed",
+   "references": [
+    {
+     "label": "OWASP API Security Top 10 2023 — API8:2023",
+     "url": "https://owasp.org/API-Security/editions/2023/en/0xa8-security-misconfiguration/"
+    },
+    {
+     "label": "CWE-319",
+     "url": "https://cwe.mitre.org/data/definitions/319.html"
+    }
+   ],
+   "headline": "O alvo é acessado por HTTP, sem TLS."
+  },
+  "resolution": "open",
+  "resolutionNote": null,
+  "createdAt": "2026-11-12T17:17:10.862182",
+  "resolutionExpiresAt": null,
+  "resolutionBy": null
+ },
+ {
+  "rowId": "c80d19dd-0c0c-40ab-ac16-3c851e98d0cc",
+  "id": "D-TLS-01",
+  "scanId": "a75bf03a-557b-491a-9022-f46dfe5b62f6",
+  "targetId": "d2ae1ed9-9d4b-43dd-9f19-9d3b12d9bc5d",
+  "targetName": "Laboratório",
+  "category": "TRANSPORT",
+  "title": "Tráfego sobre HTTPS",
+  "status": "WARN",
+  "severity": "LOW",
+  "detail": "Alvo em HTTP (ambiente de desenvolvimento). Em produção, exigir HTTPS/HSTS.",
+  "recommendation": "Forçar HTTPS e redirecionar HTTP→HTTPS em produção.",
+  "evidence": "URL base: http://127.0.0.1:55633",
+  "source": "dynamic",
+  "owasp": "API8:2023",
+  "data": null,
+  "aiRec": null,
+  "state": "vulnerable",
+  "confidence": "confirmed",
+  "asset": {
+   "method": "GET",
+   "path": "/",
+   "host": "127.0.0.1:55633"
+  },
+  "meta": {
+   "policyId": "D-TLS-01",
+   "summary": "O alvo é acessado por HTTP, sem TLS.",
+   "technical": "Verifica se a URL base usa https://.",
+   "impact": "Tráfego legível e alterável na rede.",
+   "exploitation": "Interceptação na rede (MITM).",
+   "prerequisites": "Nenhum.",
+   "passWhen": "URL base em HTTPS.",
+   "failWhen": "URL base em HTTP.",
+   "limitations": "Em ambiente local ou de desenvolvimento HTTP é esperado; a avaliação vale para produção.",
+   "severityReason": "Baixa em desenvolvimento; alta em produção.",
+   "proof": "confirmed",
+   "references": [
+    {
+     "label": "OWASP API Security Top 10 2023 — API8:2023",
+     "url": "https://owasp.org/API-Security/editions/2023/en/0xa8-security-misconfiguration/"
+    },
+    {
+     "label": "CWE-319",
+     "url": "https://cwe.mitre.org/data/definitions/319.html"
+    }
+   ],
+   "headline": "O alvo é acessado por HTTP, sem TLS."
+  },
+  "resolution": "open",
+  "resolutionNote": null,
+  "createdAt": "2026-11-12T17:17:09.484311",
+  "resolutionExpiresAt": null,
+  "resolutionBy": null
+ }
+]

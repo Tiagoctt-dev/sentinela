@@ -26,7 +26,7 @@ export default function LoginPage({ mode, onAuthenticated }: Props) {
       const res = setup ? await api.bootstrap({ name, email, password }) : await api.login({ email, password });
       onAuthenticated(res.token, res.user);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao entrar.");
+      setError(err instanceof Error ? err.message : "Não foi possível entrar. Confira e-mail e senha e tente de novo.");
     } finally {
       setBusy(false);
     }
@@ -40,7 +40,7 @@ export default function LoginPage({ mode, onAuthenticated }: Props) {
           <span className="name">Sentinela</span>
         </div>
         <h1>{setup ? "Criar o administrador" : "Entrar"}</h1>
-        <p className="muted small" style={{ margin: 0 }}>
+        <p className="muted small flush">
           {setup
             ? "Primeiro acesso: crie a conta do administrador. Ela poderá cadastrar os demais usuários."
             : "Use o e-mail e a senha cadastrados pelo administrador."}
@@ -63,7 +63,7 @@ export default function LoginPage({ mode, onAuthenticated }: Props) {
           </Field>
         )}
 
-        {error && <p className="error" role="alert" style={{ margin: 0 }}>{error}</p>}
+        {error && <p className="error flush" role="alert">{error}</p>}
         <Button type="submit" loading={busy} loadingLabel={setup ? "Criando…" : "Entrando…"}>
           {setup ? "Criar administrador" : "Entrar"}
         </Button>

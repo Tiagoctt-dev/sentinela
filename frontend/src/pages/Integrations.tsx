@@ -207,6 +207,7 @@ export default function IntegrationsPage() {
     "totals": { "PASS": 5, "FAIL": 5, "WARN": 4, "SKIP": 1 },
     "policy": { "passed": false, "violations": ["D-AUTHZ-01", "D-BOLA-01"] },
     "scanUrl": "http://localhost:5173/scans/...",
+    "scope": { "mode": "authenticated", "coveragePct": 78, "checksExecuted": 21, "checksPlanned": 27 },
     "topFindings": [{
       "id": "D-AUTHZ-01", "severity": "CRITICAL", "owasp": "API1:2023",
       "title": "Acesso não autenticado negado em /users/v1/_debug",
@@ -242,11 +243,11 @@ export default function IntegrationsPage() {
         )}
 
         {webhooks.length > 0 && (
-          <div style={{ display: "grid", gap: 8, marginTop: 14 }}>
+          <div className="integration-list">
             {webhooks.map((w) => (
-              <div key={w.id} className="target-card" style={{ padding: "10px 14px" }}>
+              <div key={w.id} className="target-card compact">
                 <div className="target-main">
-                  <div className="target-title" style={{ fontSize: 13.5 }}>
+                  <div className="target-title small-title-row">
                     {w.name}
                     <span className={`pill ${w.enabled ? "pill-ok" : "pill-na"}`}>{w.enabled ? "ativo" : "pausado"}</span>
                   </div>
@@ -314,11 +315,11 @@ export default function IntegrationsPage() {
         )}
 
         {githubIntegrations.length > 0 && (
-          <div style={{ display: "grid", gap: 8, marginTop: 14 }}>
+          <div className="integration-list">
             {githubIntegrations.map((g) => (
-              <div key={g.id} className="target-card" style={{ padding: "10px 14px" }}>
+              <div key={g.id} className="target-card compact">
                 <div className="target-main">
-                  <div className="target-title" style={{ fontSize: 13.5 }}>
+                  <div className="target-title small-title-row">
                     {g.repo}
                     <span className={`pill ${g.enabled ? "pill-ok" : "pill-na"}`}>{g.enabled ? "ativo" : "pausado"}</span>
                   </div>
@@ -387,11 +388,11 @@ Ver o scan completo → <link>`}</pre>
         )}
 
         {slackIntegrations.length > 0 && (
-          <div style={{ display: "grid", gap: 8, marginTop: 14 }}>
+          <div className="integration-list">
             {slackIntegrations.map((s) => (
-              <div key={s.id} className="target-card" style={{ padding: "10px 14px" }}>
+              <div key={s.id} className="target-card compact">
                 <div className="target-main">
-                  <div className="target-title" style={{ fontSize: 13.5 }}>
+                  <div className="target-title small-title-row">
                     {s.name}
                     <span className={`pill ${s.enabled ? "pill-ok" : "pill-na"}`}>{s.enabled ? "ativo" : "pausado"}</span>
                   </div>

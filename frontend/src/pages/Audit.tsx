@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api, AuditEntry } from "../api/client";
+import Button from "../components/ui/Button";
 import EmptyState from "../components/ui/EmptyState";
 import { useToast } from "../components/ui/ToastContext";
 
@@ -31,12 +32,27 @@ function describe(e: AuditEntry): string {
 export default function AuditPage() {
   const toast = useToast();
   const [rows, setRows] = useState<AuditEntry[]>([]);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   useEffect(() => {
-    api.listAudit().then(setRows).catch(toast.error).finally(() => setLoading(false));
+    api.listAuditPage(0).then((p) => { setRows(p.items); setTotal(p.total); }).catch(toast.error).finally(() => setLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  async function loadMore() {
+    setLoadingMore(true);
+    try {
+      const p = await api.listAuditPage(rows.length);
+      setRows((cur) => [...cur, ...p.items]);
+      setTotal(p.total);
+    } catch (e) {
+      toast.error(e);
+    } finally {
+      setLoadingMore(false);
+    }
+  }
 
   return (
     <div>
@@ -47,7 +63,7 @@ export default function AuditPage() {
         </div>
       </div>
       {loading && <p className="muted">Carregando…</p>}
-      {!loading && !rows.length && <EmptyState icon="☰" title="Nenhum registro ainda" description="As ações dos usuários aparecem aqui." />}
+      {!loading && !rows.length && <EmptyState icon="☰" title="Nenhum registro ainda" description="Toda ação que cria, altera ou exclui algo (projetos, scans, triagem, usuários) é registrada aqui, com quem fez e quando." />}
       {rows.length > 0 && (
         <div className="audit-table">
           {rows.map((r) => (
@@ -59,6 +75,16 @@ export default function AuditPage() {
             </div>
           ))}
         </div>
+      )}
+      {rows.length > 0 && (
+        <p className="muted small list-foot">
+          Mostrando {rows.length} de {total} registro(s).{" "}
+          {rows.length < total && (
+            <Button variant="ghost" size="sm" onClick={loadMore} loading={loadingMore} loadingLabel="Carregando…">
+              Carregar mais
+            </Button>
+          )}
+        </p>
       )}
     </div>
   );

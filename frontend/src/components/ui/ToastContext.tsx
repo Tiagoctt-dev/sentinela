@@ -18,7 +18,7 @@ const ToastCtx = createContext<ToastApi | null>(null);
 export function messageFromError(err: unknown): string {
   if (err instanceof ApiError) return err.message;
   if (err instanceof Error) return err.message;
-  return "Erro inesperado.";
+  return "Algo inesperado aconteceu. Tente de novo; se persistir, avise a equipe do Sentinela.";
 }
 
 export function ToastProvider({ children }: { children: ReactNode }) {

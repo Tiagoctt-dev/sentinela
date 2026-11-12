@@ -1,0 +1,81 @@
+{
+ "projects": 1,
+ "findings": {
+  "bySeverity": {
+   "CRITICAL": 2,
+   "HIGH": 0,
+   "MEDIUM": 2,
+   "LOW": 2,
+   "INFO": 0
+  },
+  "byState": {
+   "vulnerable": 3,
+   "likely": 3,
+   "inconclusive": 1,
+   "error": 0,
+   "passed": 14,
+   "not_run": 0,
+   "not_applicable": 0
+  },
+  "openConfirmedOrLikely": 6,
+  "byCategory": [
+   {
+    "category": "TOKEN_SESSION",
+    "vulnerable": 1,
+    "likely": 1
+   },
+   {
+    "category": "TRANSPORT",
+    "vulnerable": 1,
+    "likely": 0
+   },
+   {
+    "category": "INPUT_VALIDATION",
+    "vulnerable": 1,
+    "likely": 0
+   },
+   {
+    "category": "AUTHORIZATION",
+    "vulnerable": 0,
+    "likely": 1
+   },
+   {
+    "category": "INVENTORY",
+    "vulnerable": 0,
+    "likely": 1
+   }
+  ]
+ },
+ "coverage": {
+  "avgPct": 75,
+  "scansWithScope": 1
+ },
+ "routes": {
+  "routes": 11,
+  "known": 10,
+  "tested": 9,
+  "pending": 1
+ },
+ "trend": [
+  {
+   "scanId": "bc12d308-af52-4c6c-8eb4-f3db2f52bf5a",
+   "createdAt": "2026-11-12T17:17:08.327289",
+   "score": 50,
+   "vulnerable": 4,
+   "likely": 3,
+   "coveragePct": 75,
+   "mode": "authenticated"
+  },
+  {
+   "scanId": "a75bf03a-557b-491a-9022-f46dfe5b62f6",
+   "createdAt": "2026-11-12T17:17:09.484311",
+   "score": 50,
+   "vulnerable": 3,
+   "likely": 3,
+   "coveragePct": 75,
+   "mode": "authenticated"
+  }
+ ],
+ "trendNote": null,
+ "missing": []
+}

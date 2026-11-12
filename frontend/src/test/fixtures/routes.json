@@ -1,0 +1,489 @@
+{
+ "routes": [
+  {
+   "method": "GET",
+   "path": "/",
+   "discovered": false,
+   "tested": true,
+   "state": "vulnerable",
+   "sources": [
+    "alvo"
+   ],
+   "checks": [
+    {
+     "checkId": "D-HEAD-01",
+     "title": "Cabeçalhos de segurança presentes na resposta",
+     "findingRowId": "0ae83f98-86dd-40d2-a6ee-f2a155e8c464",
+     "severity": "MEDIUM",
+     "state": "passed",
+     "httpStatus": 200,
+     "note": null
+    },
+    {
+     "checkId": "D-INFO-01",
+     "title": "Servidor não divulga tecnologia/versão",
+     "findingRowId": "a0cf5898-847e-48d4-bdb7-31affdeb1d23",
+     "severity": "LOW",
+     "state": "passed",
+     "httpStatus": null,
+     "note": null
+    },
+    {
+     "checkId": "D-CORS-01",
+     "title": "CORS não permite qualquer origem com credenciais",
+     "findingRowId": "fde2ac96-2ae1-40b0-9caa-91129bea0700",
+     "severity": "HIGH",
+     "state": "passed",
+     "httpStatus": 200,
+     "note": null
+    },
+    {
+     "checkId": "D-TLS-01",
+     "title": "Tráfego sobre HTTPS",
+     "findingRowId": "c80d19dd-0c0c-40ab-ac16-3c851e98d0cc",
+     "severity": "LOW",
+     "state": "vulnerable",
+     "httpStatus": null,
+     "note": null
+    }
+   ],
+   "label": "Alvo (raiz)",
+   "known": false
+  },
+  {
+   "method": "GET",
+   "path": "/me",
+   "discovered": false,
+   "tested": true,
+   "state": "vulnerable",
+   "sources": [
+    "configuração"
+   ],
+   "checks": [
+    {
+     "checkId": "D-JWT-01",
+     "title": "JWT — alg=none não é aceito",
+     "findingRowId": "c623b23f-e052-4a70-ad22-1f03798ee9a9",
+     "severity": "CRITICAL",
+     "state": "vulnerable",
+     "httpStatus": 200,
+     "note": null
+    },
+    {
+     "checkId": "D-AUTH-01",
+     "title": "Rota protegida exige token válido",
+     "findingRowId": "938302ae-dcb3-4d23-a129-9d8e4c03bf2b",
+     "severity": "HIGH",
+     "state": "passed",
+     "httpStatus": 401,
+     "note": null
+    }
+   ],
+   "label": null,
+   "known": true
+  },
+  {
+   "method": "GET",
+   "path": "/publico/clientes",
+   "discovered": true,
+   "tested": true,
+   "state": "vulnerable",
+   "sources": [
+    "spec"
+   ],
+   "checks": [
+    {
+     "checkId": "D-SPEC-02",
+     "title": "Rotas públicas não expõem dados sensíveis",
+     "findingRowId": "c8f21083-b629-41b1-b6a2-24aca926d3d1",
+     "severity": "CRITICAL",
+     "state": "vulnerable",
+     "httpStatus": 200,
+     "note": "clientes[0].cpf, clientes[0].password"
+    }
+   ],
+   "label": null,
+   "known": true
+  },
+  {
+   "method": "POST",
+   "path": "/api/transferencias",
+   "discovered": true,
+   "tested": true,
+   "state": "likely",
+   "sources": [
+    "spec"
+   ],
+   "checks": [
+    {
+     "checkId": "D-FLOW-01",
+     "title": "Fluxos de negócio sensíveis têm limite anti-automação documentado",
+     "findingRowId": "b129b2f8-87b0-4b6a-9ece-a65b79891678",
+     "severity": "MEDIUM",
+     "state": "likely",
+     "httpStatus": null,
+     "note": null
+    }
+   ],
+   "label": null,
+   "known": true
+  },
+  {
+   "method": "POST",
+   "path": "/login",
+   "discovered": false,
+   "tested": true,
+   "state": "likely",
+   "sources": [
+    "configuração"
+   ],
+   "checks": [
+    {
+     "checkId": "D-FLOW-02",
+     "title": "Login protegido contra força bruta",
+     "findingRowId": "bf33e93b-b497-4259-9121-e58047cf2f18",
+     "severity": "MEDIUM",
+     "state": "likely",
+     "httpStatus": 401,
+     "note": "12 tentativas iguais"
+    }
+   ],
+   "label": null,
+   "known": true
+  },
+  {
+   "method": "GET",
+   "path": "/api/contas",
+   "discovered": true,
+   "tested": true,
+   "state": "inconclusive",
+   "sources": [
+    "spec"
+   ],
+   "checks": [
+    {
+     "checkId": "D-AUTHZ-01",
+     "title": "Acesso não autenticado negado em /api/contas",
+     "findingRowId": "57a0cdaf-e74c-4df7-b2c6-2d07d7465074",
+     "severity": "CRITICAL",
+     "state": "passed",
+     "httpStatus": 401,
+     "note": null
+    },
+    {
+     "checkId": "D-RATE-01",
+     "title": "Rate limiting — throttling sob rajada de requisições",
+     "findingRowId": "779e0b65-2a32-4e36-872e-527ee645f182",
+     "severity": "MEDIUM",
+     "state": "inconclusive",
+     "httpStatus": null,
+     "note": null
+    },
+    {
+     "checkId": "D-SPEC-01",
+     "title": "Rotas protegidas pela spec negam acesso anônimo",
+     "findingRowId": "1076b41e-1263-4210-a57b-7b342be0999a",
+     "severity": "HIGH",
+     "state": "passed",
+     "httpStatus": 401,
+     "note": null
+    }
+   ],
+   "label": null,
+   "known": true
+  },
+  {
+   "method": "GET",
+   "path": "/api/preview",
+   "discovered": true,
+   "tested": true,
+   "state": "inconclusive",
+   "sources": [
+    "spec"
+   ],
+   "checks": [
+    {
+     "checkId": "D-SPEC-02",
+     "title": "Rotas públicas não expõem dados sensíveis",
+     "findingRowId": "c8f21083-b629-41b1-b6a2-24aca926d3d1",
+     "severity": "CRITICAL",
+     "state": "passed",
+     "httpStatus": 200,
+     "note": null
+    },
+    {
+     "checkId": "D-SSRF-01",
+     "title": "Parâmetros de URL não permitem SSRF",
+     "findingRowId": "4add8403-3379-4f29-8960-42a484d36ae8",
+     "severity": "CRITICAL",
+     "state": "inconclusive",
+     "httpStatus": 200,
+     "note": "parâmetro url"
+    }
+   ],
+   "label": null,
+   "known": true
+  },
+  {
+   "method": "GET",
+   "path": "/createdb",
+   "discovered": true,
+   "tested": false,
+   "state": "not_tested",
+   "sources": [
+    "spec"
+   ],
+   "checks": [],
+   "label": null,
+   "known": true
+  },
+  {
+   "method": "GET",
+   "path": "/admin/usuarios",
+   "discovered": true,
+   "tested": true,
+   "state": "passed",
+   "sources": [
+    "spec"
+   ],
+   "checks": [
+    {
+     "checkId": "D-SPEC-01",
+     "title": "Rotas protegidas pela spec negam acesso anônimo",
+     "findingRowId": "1076b41e-1263-4210-a57b-7b342be0999a",
+     "severity": "HIGH",
+     "state": "passed",
+     "httpStatus": 401,
+     "note": null
+    },
+    {
+     "checkId": "D-BFLA-A1",
+     "title": "BFLA automático — rotas administrativas negam usuário comum",
+     "findingRowId": "0fefc2d4-ddb8-4bc9-9c02-f832bc64c634",
+     "severity": "HIGH",
+     "state": "passed",
+     "httpStatus": 403,
+     "note": null
+    }
+   ],
+   "label": null,
+   "known": true
+  },
+  {
+   "method": "DELETE",
+   "path": "/users/bruno",
+   "discovered": false,
+   "tested": true,
+   "state": "passed",
+   "sources": [
+    "configuração"
+   ],
+   "checks": [
+    {
+     "checkId": "D-BFLA-01",
+     "title": "BFLA — usuário comum negado em DELETE /users/bruno",
+     "findingRowId": "1f7dcabd-2ba4-4d39-b8b2-e3e98cffeada",
+     "severity": "HIGH",
+     "state": "passed",
+     "httpStatus": 403,
+     "note": null
+    }
+   ],
+   "label": null,
+   "known": true
+  },
+  {
+   "method": "PUT",
+   "path": "/users/bruno/email",
+   "discovered": false,
+   "tested": true,
+   "state": "passed",
+   "sources": [
+    "configuração"
+   ],
+   "checks": [
+    {
+     "checkId": "D-BOLA-01",
+     "title": "BOLA dinâmico — agir sobre o objeto de outro usuário",
+     "findingRowId": "f8586eb3-213b-45fa-a97b-7fe8fe755a06",
+     "severity": "CRITICAL",
+     "state": "passed",
+     "httpStatus": 403,
+     "note": null
+    }
+   ],
+   "label": null,
+   "known": true
+  }
+ ],
+ "counts": {
+  "routes": 11,
+  "known": 10,
+  "tested": 9,
+  "pending": 1,
+  "byState": {
+   "vulnerable": 3,
+   "likely": 2,
+   "error": 0,
+   "inconclusive": 2,
+   "passed": 3,
+   "not_run": 0,
+   "not_tested": 1
+  },
+  "checks": {
+   "passed": 11,
+   "vulnerable": 3,
+   "likely": 2,
+   "inconclusive": 2
+  }
+ },
+ "pendingChecks": [
+  {
+   "id": "D-BOLA-A1",
+   "title": "BOLA automático — rotas /recurso/{id} negam o objeto de outro usuário",
+   "reason": "Requer spec OpenAPI com rotas /recurso/{id}, login, dois usuários de teste e o ID do recurso do dono."
+  },
+  {
+   "id": "D-OIDC-01",
+   "title": "Provedores de autenticação disponíveis",
+   "reason": "Requer a rota de provedores de autenticação."
+  },
+  {
+   "id": "D-MASS-01",
+   "title": "Mass assignment — atribuição de campo privilegiado",
+   "reason": "Requer campo privilegiado, rota de cadastro e autorização para testes que alteram dados."
+  },
+  {
+   "id": "D-INTEG-02",
+   "title": "Endpoint de cron/interno exige segredo",
+   "reason": "Requer a rota de cron."
+  },
+  {
+   "id": "D-SOAP-01",
+   "title": "Contrato SOAP (WSDL) não está exposto publicamente",
+   "reason": "A verificação não produziu resultado neste scan."
+  },
+  {
+   "id": "D-SOAP-02",
+   "title": "Serviço SOAP declara política WS-Security",
+   "reason": "A verificação não produziu resultado neste scan."
+  },
+  {
+   "id": "D-INTEG-01",
+   "title": "Webhook rejeita requisição sem assinatura",
+   "reason": "Requer a rota de webhook."
+  }
+ ],
+ "notApplicableChecks": [
+  {
+   "id": "S-BOLA-01",
+   "title": "Autorização em nível de objeto (BOLA)",
+   "reason": "Análise de código não aplicável: o projeto não informa a pasta do código."
+  },
+  {
+   "id": "S-AUTHZ-02",
+   "title": "Rotas de API verificam autenticação/assinatura",
+   "reason": "Análise de código não aplicável: o projeto não informa a pasta do código."
+  },
+  {
+   "id": "S-TOKEN-01",
+   "title": "Cookies de sessão com flags de proteção",
+   "reason": "Análise de código não aplicável: o projeto não informa a pasta do código."
+  },
+  {
+   "id": "S-TOKEN-02",
+   "title": "Tokens de recuperação expiram e são de uso único",
+   "reason": "Análise de código não aplicável: o projeto não informa a pasta do código."
+  },
+  {
+   "id": "S-TOKEN-03",
+   "title": "DPoP — prova de posse do token",
+   "reason": "Análise de código não aplicável: o projeto não informa a pasta do código."
+  },
+  {
+   "id": "S-OIDC-01",
+   "title": "OAuth 2.0 / OpenID Connect configurado",
+   "reason": "Análise de código não aplicável: o projeto não informa a pasta do código."
+  },
+  {
+   "id": "S-OIDC-02",
+   "title": "PKCE e state no fluxo de autorização",
+   "reason": "Análise de código não aplicável: o projeto não informa a pasta do código."
+  },
+  {
+   "id": "S-INPUT-02",
+   "title": "Senhas com hash forte (bcrypt)",
+   "reason": "Análise de código não aplicável: o projeto não informa a pasta do código."
+  },
+  {
+   "id": "S-INPUT-01",
+   "title": "Validação de esquema na entrada",
+   "reason": "Análise de código não aplicável: o projeto não informa a pasta do código."
+  },
+  {
+   "id": "S-AUTHZ-01",
+   "title": "Middleware protege as rotas da aplicação",
+   "reason": "Análise de código não aplicável: o projeto não informa a pasta do código."
+  },
+  {
+   "id": "S-HEAD-01",
+   "title": "Cabeçalhos de segurança HTTP configurados",
+   "reason": "Análise de código não aplicável: o projeto não informa a pasta do código."
+  },
+  {
+   "id": "S-TLS-01",
+   "title": "mTLS — TLS mútuo por certificado",
+   "reason": "Análise de código não aplicável: o projeto não informa a pasta do código."
+  },
+  {
+   "id": "S-INTEG-02",
+   "title": "Endpoints internos protegidos por segredo",
+   "reason": "Análise de código não aplicável: o projeto não informa a pasta do código."
+  },
+  {
+   "id": "S-SEC-01",
+   "title": "Sem segredos fixos no código",
+   "reason": "Análise de código não aplicável: o projeto não informa a pasta do código."
+  },
+  {
+   "id": "S-SEC-02",
+   "title": "Verificação de certificado TLS não está desligada",
+   "reason": "Análise de código não aplicável: o projeto não informa a pasta do código."
+  },
+  {
+   "id": "S-SEC-03",
+   "title": "Modo debug não está ativo",
+   "reason": "Análise de código não aplicável: o projeto não informa a pasta do código."
+  },
+  {
+   "id": "S-SEC-04",
+   "title": "Hash de senha não usa algoritmo fraco",
+   "reason": "Análise de código não aplicável: o projeto não informa a pasta do código."
+  },
+  {
+   "id": "S-SEC-05",
+   "title": "Consultas SQL não são montadas por concatenação",
+   "reason": "Análise de código não aplicável: o projeto não informa a pasta do código."
+  },
+  {
+   "id": "S-SEC-06",
+   "title": "CORS não libera qualquer origem",
+   "reason": "Análise de código não aplicável: o projeto não informa a pasta do código."
+  },
+  {
+   "id": "S-SEC-07",
+   "title": "Tokens JWT são sempre verificados",
+   "reason": "Análise de código não aplicável: o projeto não informa a pasta do código."
+  },
+  {
+   "id": "S-DISC-01",
+   "title": "Discovery de endpoints (código)",
+   "reason": "Análise de código não aplicável: o projeto não informa a pasta do código."
+  },
+  {
+   "id": "S-INTEG-01",
+   "title": "Webhooks verificam assinatura da requisição",
+   "reason": "Análise de código não aplicável: o projeto não informa a pasta do código."
+  }
+ ]
+}

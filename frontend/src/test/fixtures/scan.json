@@ -1,0 +1,1707 @@
+{
+ "id": "a75bf03a-557b-491a-9022-f46dfe5b62f6",
+ "targetId": "d2ae1ed9-9d4b-43dd-9f19-9d3b12d9bc5d",
+ "targetName": "Laboratório",
+ "mode": "dinâmico",
+ "overall": 50,
+ "verdict": "Não conforme",
+ "categories": [
+  {
+   "key": "AUTHORIZATION",
+   "label": "Autorização & Acesso",
+   "short": "Autorização",
+   "penalty": 7.5,
+   "counts": {
+    "PASS": 5,
+    "FAIL": 0,
+    "WARN": 1,
+    "SKIP": 0
+   },
+   "evaluated": 6,
+   "score": 92,
+   "verdict": {
+    "key": "OK",
+    "label": "Conforme"
+   }
+  },
+  {
+   "key": "TOKEN_SESSION",
+   "label": "Token & Sessão",
+   "short": "Token/Sessão",
+   "penalty": 47.5,
+   "counts": {
+    "PASS": 3,
+    "FAIL": 1,
+    "WARN": 1,
+    "SKIP": 0
+   },
+   "evaluated": 5,
+   "score": 52,
+   "verdict": {
+    "key": "CRITICAL",
+    "label": "Não conforme"
+   }
+  },
+  {
+   "key": "OAUTH_OIDC",
+   "label": "OAuth · OIDC · PKCE",
+   "short": "OAuth/OIDC",
+   "penalty": 0.0,
+   "counts": {
+    "PASS": 0,
+    "FAIL": 0,
+    "WARN": 0,
+    "SKIP": 0
+   },
+   "evaluated": 0,
+   "score": null,
+   "verdict": null
+  },
+  {
+   "key": "INTEGRITY",
+   "label": "Integridade de Requisição",
+   "short": "Integridade",
+   "penalty": 0.0,
+   "counts": {
+    "PASS": 0,
+    "FAIL": 0,
+    "WARN": 0,
+    "SKIP": 0
+   },
+   "evaluated": 0,
+   "score": null,
+   "verdict": null
+  },
+  {
+   "key": "HEADERS",
+   "label": "Cabeçalhos de Segurança",
+   "short": "Headers",
+   "penalty": 0.0,
+   "counts": {
+    "PASS": 4,
+    "FAIL": 0,
+    "WARN": 0,
+    "SKIP": 0
+   },
+   "evaluated": 4,
+   "score": 100,
+   "verdict": {
+    "key": "OK",
+    "label": "Conforme"
+   }
+  },
+  {
+   "key": "INPUT_VALIDATION",
+   "label": "Validação de Entrada",
+   "short": "Validação",
+   "penalty": 40.0,
+   "counts": {
+    "PASS": 2,
+    "FAIL": 1,
+    "WARN": 0,
+    "SKIP": 0
+   },
+   "evaluated": 3,
+   "score": 60,
+   "verdict": {
+    "key": "PARTIAL",
+    "label": "Parcialmente conforme"
+   }
+  },
+  {
+   "key": "TRANSPORT",
+   "label": "Transporte (TLS/mTLS)",
+   "short": "Transporte",
+   "penalty": 3.5,
+   "counts": {
+    "PASS": 0,
+    "FAIL": 0,
+    "WARN": 1,
+    "SKIP": 1
+   },
+   "evaluated": 1,
+   "score": 96,
+   "verdict": {
+    "key": "OK",
+    "label": "Conforme"
+   }
+  },
+  {
+   "key": "INVENTORY",
+   "label": "Inventário de Endpoints",
+   "short": "Inventário",
+   "penalty": 3.5,
+   "counts": {
+    "PASS": 0,
+    "FAIL": 0,
+    "WARN": 1,
+    "SKIP": 0
+   },
+   "evaluated": 1,
+   "score": 96,
+   "verdict": {
+    "key": "OK",
+    "label": "Conforme"
+   }
+  }
+ ],
+ "totals": {
+  "PASS": 14,
+  "FAIL": 2,
+  "WARN": 4,
+  "SKIP": 1,
+  "states": {
+   "vulnerable": 3,
+   "likely": 3,
+   "inconclusive": 1,
+   "error": 0,
+   "passed": 14,
+   "not_run": 0,
+   "not_applicable": 0
+  }
+ },
+ "ai": [
+  {
+   "provider": "Gemini",
+   "key": "gemini",
+   "enabled": false,
+   "reason": "desativado por --no-ai"
+  },
+  {
+   "provider": "Groq",
+   "key": "groq",
+   "enabled": false,
+   "reason": "desativado por --no-ai"
+  }
+ ],
+ "policy": {
+  "policyId": "default-owasp",
+  "policyName": "Padrão OWASP API",
+  "passed": false,
+  "reason": "Nenhuma vulnerabilidade crítica confirmada é tolerada.",
+  "violations": [
+   "D-JWT-01",
+   "D-SPEC-02"
+  ],
+  "pending": []
+ },
+ "createdAt": "2026-11-12T17:17:09.484311",
+ "createdBy": "auth-off",
+ "origin": "manual",
+ "scope": {
+  "mode": "authenticated",
+  "credentials": {
+   "count": 3,
+   "roles": [
+    "admin",
+    "user"
+   ]
+  },
+  "specFound": true,
+  "codeAnalyzed": false,
+  "mutationsAllowed": true,
+  "checksPlanned": 28,
+  "checksExecuted": 21,
+  "coveragePct": 75,
+  "notRun": [
+   {
+    "id": "D-BOLA-A1",
+    "title": "BOLA automático — rotas /recurso/{id} negam o objeto de outro usuário",
+    "reason": "Requer spec OpenAPI com rotas /recurso/{id}, login, dois usuários de teste e o ID do recurso do dono."
+   },
+   {
+    "id": "D-OIDC-01",
+    "title": "Provedores de autenticação disponíveis",
+    "reason": "Requer a rota de provedores de autenticação."
+   },
+   {
+    "id": "D-MASS-01",
+    "title": "Mass assignment — atribuição de campo privilegiado",
+    "reason": "Requer campo privilegiado, rota de cadastro e autorização para testes que alteram dados."
+   },
+   {
+    "id": "D-INTEG-02",
+    "title": "Endpoint de cron/interno exige segredo",
+    "reason": "Requer a rota de cron."
+   },
+   {
+    "id": "D-SOAP-01",
+    "title": "Contrato SOAP (WSDL) não está exposto publicamente",
+    "reason": "A verificação não produziu resultado neste scan."
+   },
+   {
+    "id": "D-SOAP-02",
+    "title": "Serviço SOAP declara política WS-Security",
+    "reason": "A verificação não produziu resultado neste scan."
+   },
+   {
+    "id": "D-INTEG-01",
+    "title": "Webhook rejeita requisição sem assinatura",
+    "reason": "Requer a rota de webhook."
+   }
+  ],
+  "notApplicable": [
+   {
+    "id": "S-BOLA-01",
+    "title": "Autorização em nível de objeto (BOLA)",
+    "reason": "Análise de código não aplicável: o projeto não informa a pasta do código."
+   },
+   {
+    "id": "S-AUTHZ-02",
+    "title": "Rotas de API verificam autenticação/assinatura",
+    "reason": "Análise de código não aplicável: o projeto não informa a pasta do código."
+   },
+   {
+    "id": "S-TOKEN-01",
+    "title": "Cookies de sessão com flags de proteção",
+    "reason": "Análise de código não aplicável: o projeto não informa a pasta do código."
+   },
+   {
+    "id": "S-TOKEN-02",
+    "title": "Tokens de recuperação expiram e são de uso único",
+    "reason": "Análise de código não aplicável: o projeto não informa a pasta do código."
+   },
+   {
+    "id": "S-TOKEN-03",
+    "title": "DPoP — prova de posse do token",
+    "reason": "Análise de código não aplicável: o projeto não informa a pasta do código."
+   },
+   {
+    "id": "S-OIDC-01",
+    "title": "OAuth 2.0 / OpenID Connect configurado",
+    "reason": "Análise de código não aplicável: o projeto não informa a pasta do código."
+   },
+   {
+    "id": "S-OIDC-02",
+    "title": "PKCE e state no fluxo de autorização",
+    "reason": "Análise de código não aplicável: o projeto não informa a pasta do código."
+   },
+   {
+    "id": "S-INPUT-02",
+    "title": "Senhas com hash forte (bcrypt)",
+    "reason": "Análise de código não aplicável: o projeto não informa a pasta do código."
+   },
+   {
+    "id": "S-INPUT-01",
+    "title": "Validação de esquema na entrada",
+    "reason": "Análise de código não aplicável: o projeto não informa a pasta do código."
+   },
+   {
+    "id": "S-AUTHZ-01",
+    "title": "Middleware protege as rotas da aplicação",
+    "reason": "Análise de código não aplicável: o projeto não informa a pasta do código."
+   },
+   {
+    "id": "S-HEAD-01",
+    "title": "Cabeçalhos de segurança HTTP configurados",
+    "reason": "Análise de código não aplicável: o projeto não informa a pasta do código."
+   },
+   {
+    "id": "S-TLS-01",
+    "title": "mTLS — TLS mútuo por certificado",
+    "reason": "Análise de código não aplicável: o projeto não informa a pasta do código."
+   },
+   {
+    "id": "S-INTEG-02",
+    "title": "Endpoints internos protegidos por segredo",
+    "reason": "Análise de código não aplicável: o projeto não informa a pasta do código."
+   },
+   {
+    "id": "S-SEC-01",
+    "title": "Sem segredos fixos no código",
+    "reason": "Análise de código não aplicável: o projeto não informa a pasta do código."
+   },
+   {
+    "id": "S-SEC-02",
+    "title": "Verificação de certificado TLS não está desligada",
+    "reason": "Análise de código não aplicável: o projeto não informa a pasta do código."
+   },
+   {
+    "id": "S-SEC-03",
+    "title": "Modo debug não está ativo",
+    "reason": "Análise de código não aplicável: o projeto não informa a pasta do código."
+   },
+   {
+    "id": "S-SEC-04",
+    "title": "Hash de senha não usa algoritmo fraco",
+    "reason": "Análise de código não aplicável: o projeto não informa a pasta do código."
+   },
+   {
+    "id": "S-SEC-05",
+    "title": "Consultas SQL não são montadas por concatenação",
+    "reason": "Análise de código não aplicável: o projeto não informa a pasta do código."
+   },
+   {
+    "id": "S-SEC-06",
+    "title": "CORS não libera qualquer origem",
+    "reason": "Análise de código não aplicável: o projeto não informa a pasta do código."
+   },
+   {
+    "id": "S-SEC-07",
+    "title": "Tokens JWT são sempre verificados",
+    "reason": "Análise de código não aplicável: o projeto não informa a pasta do código."
+   },
+   {
+    "id": "S-DISC-01",
+    "title": "Discovery de endpoints (código)",
+    "reason": "Análise de código não aplicável: o projeto não informa a pasta do código."
+   },
+   {
+    "id": "S-INTEG-01",
+    "title": "Webhooks verificam assinatura da requisição",
+    "reason": "Análise de código não aplicável: o projeto não informa a pasta do código."
+   }
+  ],
+  "limitations": [
+   "Sem análise de código: a pasta do projeto não foi informada."
+  ]
+ },
+ "findings": [
+  {
+   "rowId": "57a0cdaf-e74c-4df7-b2c6-2d07d7465074",
+   "id": "D-AUTHZ-01",
+   "category": "AUTHORIZATION",
+   "title": "Acesso não autenticado negado em /api/contas",
+   "status": "PASS",
+   "severity": "CRITICAL",
+   "detail": "Retornou 401 sem sessão — acesso negado corretamente.",
+   "recommendation": "Endpoints com dados do usuário devem retornar 401 sem sessão (OWASP API #1/#2).",
+   "evidence": "GET http://127.0.0.1:55633/api/contas\n→ HTTP 401\n{\"erro\": \"token\"}",
+   "source": "dynamic",
+   "owasp": "API1:2023",
+   "data": null,
+   "state": "passed",
+   "confidence": "none",
+   "asset": {
+    "method": "GET",
+    "path": "/api/contas",
+    "httpStatus": 401,
+    "host": "127.0.0.1:55633"
+   },
+   "meta": {
+    "policyId": "D-AUTHZ-01",
+    "summary": "Uma rota declarada como protegida responde sem sessão.",
+    "technical": "Cada rota listada em 'rotas que exigem login' é chamada sem credencial. 401/403 (ou redirecionamento para login) é considerado negação correta.",
+    "impact": "Exposição de dados ou funções que deveriam exigir login.",
+    "exploitation": "Acesso direto à URL, sem autenticação.",
+    "prerequisites": "Lista de rotas protegidas informada no projeto.",
+    "passWhen": "Resposta 401/403 ou redirecionamento para login.",
+    "failWhen": "Resposta 2xx sem sessão. (404 vira alerta: rota possivelmente inexistente neste ambiente.)",
+    "limitations": "Depende de a rota realmente exigir login na intenção do projeto; rota pública listada por engano gera falso positivo.",
+    "severityReason": "Crítica: dado potencialmente acessível sem autenticação.",
+    "proof": "confirmed",
+    "references": [
+     {
+      "label": "OWASP API Security Top 10 2023 — API1:2023",
+      "url": "https://owasp.org/API-Security/editions/2023/en/0xa1-broken-object-level-authorization/"
+     },
+     {
+      "label": "CWE-306",
+      "url": "https://cwe.mitre.org/data/definitions/306.html"
+     },
+     {
+      "label": "CWE-862",
+      "url": "https://cwe.mitre.org/data/definitions/862.html"
+     }
+    ],
+    "headline": "Acesso não autenticado negado em /api/contas",
+    "scopeNote": "Aprovado dentro do escopo efetivamente verificado — não é garantia de ausência da falha."
+   },
+   "aiRec": null,
+   "resolution": "open",
+   "resolutionNote": null
+  },
+  {
+   "rowId": "0ae83f98-86dd-40d2-a6ee-f2a155e8c464",
+   "id": "D-HEAD-01",
+   "category": "HEADERS",
+   "title": "Cabeçalhos de segurança presentes na resposta",
+   "status": "PASS",
+   "severity": "MEDIUM",
+   "detail": "Todos os cabeçalhos de segurança avaliados estão presentes.",
+   "recommendation": "Adicionar os cabeçalhos de segurança ausentes na resposta (via middleware/proxy do servidor).",
+   "evidence": "GET http://127.0.0.1:55633/\n→ HTTP 200\n5/5 cabeçalhos presentes",
+   "source": "dynamic",
+   "owasp": "API8:2023",
+   "data": null,
+   "state": "passed",
+   "confidence": "none",
+   "asset": {
+    "method": "GET",
+    "path": "/",
+    "httpStatus": 200,
+    "host": "127.0.0.1:55633"
+   },
+   "meta": {
+    "policyId": "D-HEAD-01",
+    "summary": "Cabeçalhos de segurança HTTP ausentes.",
+    "technical": "Confere HSTS, CSP, X-Content-Type-Options, X-Frame-Options e Referrer-Policy na resposta da raiz.",
+    "impact": "Reduz a defesa contra clickjacking, MIME sniffing e downgrade para HTTP.",
+    "exploitation": "Depende de outra falha (XSS, página embutida) para ser explorado.",
+    "prerequisites": "Alvo respondendo.",
+    "passWhen": "Todos os cabeçalhos presentes.",
+    "failWhen": "Um ou mais ausentes (4 ou mais = falha; menos = alerta).",
+    "limitations": "Analisa só a resposta da raiz; APIs puras podem dispensar alguns (CSP, X-Frame-Options).",
+    "severityReason": "Média: endurecimento; não é exploração direta.",
+    "proof": "confirmed",
+    "references": [
+     {
+      "label": "OWASP API Security Top 10 2023 — API8:2023",
+      "url": "https://owasp.org/API-Security/editions/2023/en/0xa8-security-misconfiguration/"
+     },
+     {
+      "label": "CWE-693",
+      "url": "https://cwe.mitre.org/data/definitions/693.html"
+     },
+     {
+      "label": "CWE-1021",
+      "url": "https://cwe.mitre.org/data/definitions/1021.html"
+     },
+     {
+      "label": "CWE-319",
+      "url": "https://cwe.mitre.org/data/definitions/319.html"
+     }
+    ],
+    "headline": "Cabeçalhos de segurança presentes na resposta",
+    "scopeNote": "Aprovado dentro do escopo efetivamente verificado — não é garantia de ausência da falha."
+   },
+   "aiRec": null,
+   "resolution": "open",
+   "resolutionNote": null
+  },
+  {
+   "rowId": "a0cf5898-847e-48d4-bdb7-31affdeb1d23",
+   "id": "D-INFO-01",
+   "category": "HEADERS",
+   "title": "Servidor não divulga tecnologia/versão",
+   "status": "PASS",
+   "severity": "LOW",
+   "detail": "Não divulga X-Powered-By nem versão no header Server.",
+   "recommendation": "Ocultar X-Powered-By e a versão no header Server para reduzir a superfície de reconhecimento (OWASP API8).",
+   "evidence": "",
+   "source": "dynamic",
+   "owasp": "API8:2023",
+   "data": null,
+   "state": "passed",
+   "confidence": "none",
+   "asset": {
+    "method": "GET",
+    "path": "/",
+    "host": "127.0.0.1:55633"
+   },
+   "meta": {
+    "policyId": "D-INFO-01",
+    "summary": "O servidor divulga tecnologia e versão.",
+    "technical": "Procura X-Powered-By e versão no cabeçalho Server.",
+    "impact": "Facilita a busca por vulnerabilidades conhecidas.",
+    "exploitation": "Reconhecimento prévio do atacante.",
+    "prerequisites": "Alvo respondendo.",
+    "passWhen": "Nenhuma divulgação.",
+    "failWhen": "Cabeçalho com tecnologia/versão.",
+    "limitations": "Apenas reconhecimento; sem impacto isolado.",
+    "severityReason": "Baixa.",
+    "proof": "confirmed",
+    "references": [
+     {
+      "label": "OWASP API Security Top 10 2023 — API8:2023",
+      "url": "https://owasp.org/API-Security/editions/2023/en/0xa8-security-misconfiguration/"
+     },
+     {
+      "label": "CWE-200",
+      "url": "https://cwe.mitre.org/data/definitions/200.html"
+     },
+     {
+      "label": "CWE-497",
+      "url": "https://cwe.mitre.org/data/definitions/497.html"
+     }
+    ],
+    "headline": "Servidor não divulga tecnologia/versão",
+    "scopeNote": "Aprovado dentro do escopo efetivamente verificado — não é garantia de ausência da falha."
+   },
+   "aiRec": null,
+   "resolution": "open",
+   "resolutionNote": null
+  },
+  {
+   "rowId": "fde2ac96-2ae1-40b0-9caa-91129bea0700",
+   "id": "D-CORS-01",
+   "category": "HEADERS",
+   "title": "CORS não permite qualquer origem com credenciais",
+   "status": "PASS",
+   "severity": "HIGH",
+   "detail": "Nenhum cabeçalho CORS na resposta para uma origem não confiável (comportamento padrão do navegador já protege).",
+   "recommendation": "Nunca combinar Access-Control-Allow-Origin: * (ou refletir qualquer Origin) com Access-Control-Allow-Credentials: true; usar allowlist explícita de origens.",
+   "evidence": "GET http://127.0.0.1:55633/ (Origin: https://attacker-controlled.test)\n→ HTTP 200\nAllow-Origin: - · Allow-Credentials: False",
+   "source": "dynamic",
+   "owasp": "API8:2023",
+   "data": null,
+   "state": "passed",
+   "confidence": "none",
+   "asset": {
+    "method": "GET",
+    "path": "/",
+    "httpStatus": 200,
+    "host": "127.0.0.1:55633"
+   },
+   "meta": {
+    "policyId": "D-CORS-01",
+    "summary": "CORS permite qualquer origem com credenciais.",
+    "technical": "Envia uma origem arbitrária e verifica se ela é refletida em Access-Control-Allow-Origin junto com Allow-Credentials: true.",
+    "impact": "Sites de terceiros fazem requisições autenticadas em nome da vítima.",
+    "exploitation": "Página do atacante faz fetch com cookies do usuário.",
+    "prerequisites": "Alvo respondendo a requisições com Origin.",
+    "passWhen": "Origem arbitrária não é aceita com credenciais.",
+    "failWhen": "Origem arbitrária aceita com credenciais.",
+    "limitations": "Testa uma origem na rota raiz; outras rotas podem ter política diferente.",
+    "severityReason": "Alta.",
+    "proof": "confirmed",
+    "references": [
+     {
+      "label": "OWASP API Security Top 10 2023 — API8:2023",
+      "url": "https://owasp.org/API-Security/editions/2023/en/0xa8-security-misconfiguration/"
+     },
+     {
+      "label": "CWE-942",
+      "url": "https://cwe.mitre.org/data/definitions/942.html"
+     },
+     {
+      "label": "CWE-346",
+      "url": "https://cwe.mitre.org/data/definitions/346.html"
+     }
+    ],
+    "headline": "CORS não permite qualquer origem com credenciais",
+    "scopeNote": "Aprovado dentro do escopo efetivamente verificado — não é garantia de ausência da falha."
+   },
+   "aiRec": null,
+   "resolution": "open",
+   "resolutionNote": null
+  },
+  {
+   "rowId": "779e0b65-2a32-4e36-872e-527ee645f182",
+   "id": "D-RATE-01",
+   "category": "TRANSPORT",
+   "title": "Rate limiting — throttling sob rajada de requisições",
+   "status": "SKIP",
+   "severity": "MEDIUM",
+   "detail": "A rota /api/contas respondeu sempre [401] (sem 2xx): a rajada não alcançou a lógica da aplicação, então não mede rate limiting.",
+   "recommendation": "Aplicar rate limiting/quota por IP ou por token em endpoints custosos ou sensíveis (OWASP API4).",
+   "evidence": "GET http://127.0.0.1:55633/api/contas × 20\n→ HTTP [401]",
+   "source": "dynamic",
+   "owasp": "API4:2023",
+   "data": null,
+   "state": "inconclusive",
+   "confidence": "none",
+   "asset": {
+    "method": "GET",
+    "path": "/api/contas",
+    "host": "127.0.0.1:55633"
+   },
+   "meta": {
+    "policyId": "D-RATE-01",
+    "summary": "Não houve limitação de requisições em uma rajada de 20.",
+    "technical": "Envia 20 requisições seguidas à raiz do alvo e procura resposta 429 ou cabeçalhos de limite.",
+    "impact": "Abuso de recursos, força bruta e custo elevado.",
+    "exploitation": "Automação de requisições em volume.",
+    "prerequisites": "Alvo respondendo.",
+    "passWhen": "Alguma resposta 429 (throttling) na rajada.",
+    "failWhen": "Nenhuma das 20 requisições foi limitada.",
+    "limitations": "20 requisições podem estar abaixo do limite real do serviço; a raiz pode não ser a rota limitada. É indício, não prova.",
+    "severityReason": "Média: ausência de limite não é, isoladamente, exploração.",
+    "proof": "indicative",
+    "references": [
+     {
+      "label": "OWASP API Security Top 10 2023 — API4:2023",
+      "url": "https://owasp.org/API-Security/editions/2023/en/0xa4-unrestricted-resource-consumption/"
+     },
+     {
+      "label": "CWE-770",
+      "url": "https://cwe.mitre.org/data/definitions/770.html"
+     }
+    ],
+    "headline": "Rate limiting — throttling sob rajada de requisições",
+    "scopeNote": "Esta verificação não produziu evidência suficiente para aprovar nem reprovar."
+   },
+   "aiRec": null,
+   "resolution": "open",
+   "resolutionNote": null
+  },
+  {
+   "rowId": "c80d19dd-0c0c-40ab-ac16-3c851e98d0cc",
+   "id": "D-TLS-01",
+   "category": "TRANSPORT",
+   "title": "Tráfego sobre HTTPS",
+   "status": "WARN",
+   "severity": "LOW",
+   "detail": "Alvo em HTTP (ambiente de desenvolvimento). Em produção, exigir HTTPS/HSTS.",
+   "recommendation": "Forçar HTTPS e redirecionar HTTP→HTTPS em produção.",
+   "evidence": "URL base: http://127.0.0.1:55633",
+   "source": "dynamic",
+   "owasp": "API8:2023",
+   "data": null,
+   "state": "vulnerable",
+   "confidence": "confirmed",
+   "asset": {
+    "method": "GET",
+    "path": "/",
+    "host": "127.0.0.1:55633"
+   },
+   "meta": {
+    "policyId": "D-TLS-01",
+    "summary": "O alvo é acessado por HTTP, sem TLS.",
+    "technical": "Verifica se a URL base usa https://.",
+    "impact": "Tráfego legível e alterável na rede.",
+    "exploitation": "Interceptação na rede (MITM).",
+    "prerequisites": "Nenhum.",
+    "passWhen": "URL base em HTTPS.",
+    "failWhen": "URL base em HTTP.",
+    "limitations": "Em ambiente local ou de desenvolvimento HTTP é esperado; a avaliação vale para produção.",
+    "severityReason": "Baixa em desenvolvimento; alta em produção.",
+    "proof": "confirmed",
+    "references": [
+     {
+      "label": "OWASP API Security Top 10 2023 — API8:2023",
+      "url": "https://owasp.org/API-Security/editions/2023/en/0xa8-security-misconfiguration/"
+     },
+     {
+      "label": "CWE-319",
+      "url": "https://cwe.mitre.org/data/definitions/319.html"
+     }
+    ],
+    "headline": "O alvo é acessado por HTTP, sem TLS."
+   },
+   "aiRec": null,
+   "resolution": "open",
+   "resolutionNote": null
+  },
+  {
+   "rowId": "c623b23f-e052-4a70-ad22-1f03798ee9a9",
+   "id": "D-JWT-01",
+   "category": "TOKEN_SESSION",
+   "title": "JWT — alg=none não é aceito",
+   "status": "FAIL",
+   "severity": "CRITICAL",
+   "detail": "Um token reassinado com alg=none (sem assinatura) foi ACEITO pela rota protegida — qualquer claim pode ser forjado.",
+   "recommendation": "Nunca honrar o alg vindo do header do token; fixar o algoritmo esperado (allowlist) na verificação.",
+   "evidence": "GET http://127.0.0.1:55633/me\n(Authorization: Bearer <token com alg=none e sem assinatura>)\n→ HTTP 200\ncontrole (sem credencial) → HTTP 401\nalg original do token: HS256",
+   "source": "dynamic",
+   "owasp": "API2:2023",
+   "data": {
+    "requiresLogin": true
+   },
+   "state": "vulnerable",
+   "confidence": "confirmed",
+   "asset": {
+    "method": "GET",
+    "path": "/me",
+    "httpStatus": 200,
+    "host": "127.0.0.1:55633"
+   },
+   "meta": {
+    "policyId": "D-JWT-01",
+    "summary": "O servidor aceita token JWT sem assinatura (alg=none).",
+    "technical": "O Sentinela obtém um token válido, remonta o mesmo conteúdo com cabeçalho alg=none e sem assinatura e o envia à rota protegida.",
+    "impact": "Qualquer pessoa forja um token e assume a identidade de qualquer usuário.",
+    "exploitation": "O atacante cria um JWT com o usuário desejado, sem conhecer a chave, e o apresenta ao servidor.",
+    "prerequisites": "Login funcional e rota protegida configurada.",
+    "passWhen": "A rota protegida rejeita o token forjado.",
+    "failWhen": "A rota protegida responde 200 ao token forjado.",
+    "limitations": "Valida apenas a variante alg=none; outras falhas de verificação (confusão de algoritmo RS256/HS256) não são testadas.",
+    "severityReason": "Crítica: quebra total da autenticação.",
+    "proof": "confirmed",
+    "references": [
+     {
+      "label": "OWASP API Security Top 10 2023 — API2:2023",
+      "url": "https://owasp.org/API-Security/editions/2023/en/0xa2-broken-authentication/"
+     },
+     {
+      "label": "CWE-347",
+      "url": "https://cwe.mitre.org/data/definitions/347.html"
+     }
+    ],
+    "headline": "O servidor aceita token JWT sem assinatura (alg=none)."
+   },
+   "aiRec": null,
+   "resolution": "open",
+   "resolutionNote": null
+  },
+  {
+   "rowId": "741945a0-05f3-4742-be83-2388311ce99a",
+   "id": "D-JWT-02",
+   "category": "TOKEN_SESSION",
+   "title": "JWT — segredo HMAC não é trivial",
+   "status": "PASS",
+   "severity": "CRITICAL",
+   "detail": "Nenhum segredo da wordlist testada reproduziu a assinatura.",
+   "recommendation": "Usar um segredo aleatório de alto entropia (≥32 bytes) ou migrar para chave assimétrica (RS256/ES256).",
+   "evidence": "alg: HS256 · 14 segredos comuns testados",
+   "source": "dynamic",
+   "owasp": "API2:2023",
+   "data": {
+    "requiresLogin": true
+   },
+   "state": "passed",
+   "confidence": "none",
+   "asset": {
+    "host": "127.0.0.1:55633"
+   },
+   "meta": {
+    "policyId": "D-JWT-02",
+    "summary": "O segredo de assinatura do JWT é fraco.",
+    "technical": "Para tokens HS256/384/512, o Sentinela tenta reproduzir a assinatura com uma lista de segredos comuns.",
+    "impact": "Com o segredo, o atacante forja tokens válidos para qualquer usuário.",
+    "exploitation": "Ataque offline de dicionário sobre um token capturado.",
+    "prerequisites": "Token HMAC obtido no login.",
+    "passWhen": "Nenhum segredo da lista reproduz a assinatura (ou o algoritmo não é HMAC — teste não aplicável).",
+    "failWhen": "Um segredo da lista reproduz a assinatura.",
+    "limitations": "A lista é curta. Aprovação não prova que o segredo seja forte, apenas que não é um dos valores comuns testados.",
+    "severityReason": "Crítica: permite forjar identidade.",
+    "proof": "confirmed",
+    "references": [
+     {
+      "label": "OWASP API Security Top 10 2023 — API2:2023",
+      "url": "https://owasp.org/API-Security/editions/2023/en/0xa2-broken-authentication/"
+     },
+     {
+      "label": "CWE-521",
+      "url": "https://cwe.mitre.org/data/definitions/521.html"
+     },
+     {
+      "label": "CWE-326",
+      "url": "https://cwe.mitre.org/data/definitions/326.html"
+     }
+    ],
+    "headline": "JWT — segredo HMAC não é trivial",
+    "scopeNote": "Aprovado dentro do escopo efetivamente verificado — não é garantia de ausência da falha."
+   },
+   "aiRec": null,
+   "resolution": "open",
+   "resolutionNote": null
+  },
+  {
+   "rowId": "5fded81c-0bf5-43e1-9955-0a97fd044180",
+   "id": "D-JWT-03",
+   "category": "TOKEN_SESSION",
+   "title": "JWT possui claim de expiração (exp)",
+   "status": "PASS",
+   "severity": "MEDIUM",
+   "detail": "Token traz exp — expira.",
+   "recommendation": "Todo token de acesso deve ter TTL curto via claim exp.",
+   "evidence": "Claims do token: exp, sub",
+   "source": "dynamic",
+   "owasp": "API2:2023",
+   "data": {
+    "requiresLogin": true
+   },
+   "state": "passed",
+   "confidence": "none",
+   "asset": {
+    "host": "127.0.0.1:55633"
+   },
+   "meta": {
+    "policyId": "D-JWT-03",
+    "summary": "O token não possui data de expiração (exp).",
+    "technical": "O conteúdo do JWT recebido no login é decodificado e se verifica a presença do claim exp.",
+    "impact": "Token roubado permanece válido indefinidamente.",
+    "exploitation": "Reaproveitamento de um token vazado, sem limite de tempo.",
+    "prerequisites": "Token JWT obtido no login.",
+    "passWhen": "O token traz exp.",
+    "failWhen": "O token não traz exp.",
+    "limitations": "Não avalia se o servidor aplica o exp, nem se o prazo é adequado.",
+    "severityReason": "Média: amplia a janela de abuso de tokens vazados, mas não é exploração direta.",
+    "proof": "confirmed",
+    "references": [
+     {
+      "label": "OWASP API Security Top 10 2023 — API2:2023",
+      "url": "https://owasp.org/API-Security/editions/2023/en/0xa2-broken-authentication/"
+     },
+     {
+      "label": "CWE-613",
+      "url": "https://cwe.mitre.org/data/definitions/613.html"
+     }
+    ],
+    "headline": "JWT possui claim de expiração (exp)",
+    "scopeNote": "Aprovado dentro do escopo efetivamente verificado — não é garantia de ausência da falha."
+   },
+   "aiRec": null,
+   "resolution": "open",
+   "resolutionNote": null
+  },
+  {
+   "rowId": "79dd5b42-ebdd-46eb-9946-848e55806390",
+   "id": "D-EXPOSE-01",
+   "category": "INPUT_VALIDATION",
+   "title": "Resposta não expõe campos sensíveis",
+   "status": "PASS",
+   "severity": "HIGH",
+   "detail": "Nenhum campo da lista de sensíveis (senha, chave, documento...) apareceu na resposta.",
+   "recommendation": "Usar allowlist de campos na serialização da resposta (nunca serializar o model inteiro).",
+   "evidence": "",
+   "source": "dynamic",
+   "owasp": "API3:2023",
+   "data": {
+    "requiresLogin": true
+   },
+   "state": "passed",
+   "confidence": "none",
+   "asset": {
+    "host": "127.0.0.1:55633"
+   },
+   "meta": {
+    "policyId": "D-EXPOSE-01",
+    "summary": "A resposta autenticada devolve campos sensíveis.",
+    "technical": "A rota 'usuário logado' é chamada e a resposta é varrida por nomes de campo como senha, hash, token, CPF e chave, com valor preenchido.",
+    "impact": "Vazamento de credenciais ou dados pessoais em respostas comuns.",
+    "exploitation": "Leitura da resposta normal da API.",
+    "prerequisites": "Login e rota protegida configurados.",
+    "passWhen": "Nenhum campo sensível com valor.",
+    "failWhen": "Campo sensível com valor na resposta.",
+    "limitations": "Verifica apenas uma rota e pelos nomes dos campos.",
+    "severityReason": "Alta: expõe dados sensíveis a quem pode chamar a rota.",
+    "proof": "confirmed",
+    "references": [
+     {
+      "label": "OWASP API Security Top 10 2023 — API3:2023",
+      "url": "https://owasp.org/API-Security/editions/2023/en/0xa3-broken-object-property-level-authorization/"
+     },
+     {
+      "label": "CWE-200",
+      "url": "https://cwe.mitre.org/data/definitions/200.html"
+     },
+     {
+      "label": "CWE-213",
+      "url": "https://cwe.mitre.org/data/definitions/213.html"
+     }
+    ],
+    "headline": "Resposta não expõe campos sensíveis",
+    "scopeNote": "Aprovado dentro do escopo efetivamente verificado — não é garantia de ausência da falha."
+   },
+   "aiRec": null,
+   "resolution": "open",
+   "resolutionNote": null
+  },
+  {
+   "rowId": "938302ae-dcb3-4d23-a129-9d8e4c03bf2b",
+   "id": "D-AUTH-01",
+   "category": "TOKEN_SESSION",
+   "title": "Rota protegida exige token válido",
+   "status": "PASS",
+   "severity": "HIGH",
+   "detail": "/me negou acesso sem token (401) e com token inválido (401).",
+   "recommendation": "Exigir token assinado e válido em toda rota protegida; rejeitar ausência e tokens malformados.",
+   "evidence": "GET http://127.0.0.1:55633/me\n→ sem token: HTTP 401 · token inválido: HTTP 401",
+   "source": "dynamic",
+   "owasp": "API2:2023",
+   "data": {
+    "requiresLogin": true
+   },
+   "state": "passed",
+   "confidence": "none",
+   "asset": {
+    "method": "GET",
+    "path": "/me",
+    "url": "http://127.0.0.1:55633/me",
+    "httpStatus": 401,
+    "host": "127.0.0.1:55633"
+   },
+   "meta": {
+    "policyId": "D-AUTH-01",
+    "summary": "A rota protegida aceita acesso sem token ou com token inválido.",
+    "technical": "A rota configurada como 'devolve o usuário logado' é chamada sem credencial e com um token inválido.",
+    "impact": "Dados do usuário acessíveis sem autenticação.",
+    "exploitation": "Requisição direta à rota, sem login.",
+    "prerequisites": "Rota protegida configurada.",
+    "passWhen": "Ambas as chamadas retornam 401 ou 403.",
+    "failWhen": "Alguma das chamadas retorna resposta diferente de 401/403.",
+    "limitations": "Testa uma única rota. Respostas como 302 ou 404 geram falha e exigem leitura da evidência.",
+    "severityReason": "Alta: falha de autenticação em rota que deveria ser protegida.",
+    "proof": "confirmed",
+    "references": [
+     {
+      "label": "OWASP API Security Top 10 2023 — API2:2023",
+      "url": "https://owasp.org/API-Security/editions/2023/en/0xa2-broken-authentication/"
+     },
+     {
+      "label": "CWE-306",
+      "url": "https://cwe.mitre.org/data/definitions/306.html"
+     },
+     {
+      "label": "CWE-287",
+      "url": "https://cwe.mitre.org/data/definitions/287.html"
+     }
+    ],
+    "headline": "Rota protegida exige token válido",
+    "scopeNote": "Aprovado dentro do escopo efetivamente verificado — não é garantia de ausência da falha."
+   },
+   "aiRec": null,
+   "resolution": "open",
+   "resolutionNote": null
+  },
+  {
+   "rowId": "f8586eb3-213b-45fa-a97b-7fe8fe755a06",
+   "id": "D-BOLA-01",
+   "category": "AUTHORIZATION",
+   "title": "BOLA dinâmico — agir sobre o objeto de outro usuário",
+   "status": "PASS",
+   "severity": "CRITICAL",
+   "detail": "Tentativa de \"ana\" agir sobre o recurso de \"bruno\" foi negada (403).",
+   "recommendation": "Validar que o dono do token é o dono do objeto antes de qualquer leitura/escrita.",
+   "evidence": "PUT http://127.0.0.1:55633/users/bruno/email\n(autenticado como \"ana\"; o recurso pertence a \"bruno\")\n→ HTTP 403\ncontrole (recurso inexistente) → HTTP 404",
+   "source": "dynamic",
+   "owasp": "API1:2023",
+   "data": {
+    "requiresLogin": true
+   },
+   "state": "passed",
+   "confidence": "none",
+   "asset": {
+    "method": "PUT",
+    "path": "/users/bruno/email",
+    "httpStatus": 403,
+    "host": "127.0.0.1:55633"
+   },
+   "meta": {
+    "policyId": "D-BOLA-01",
+    "summary": "Um usuário consegue agir sobre um recurso que pertence a outro usuário.",
+    "technical": "O Sentinela autentica dois usuários de teste, A (dono) e B (atacante), e executa a operação configurada no recurso de A usando o token de B. Resposta 2xx indica que o servidor aceitou a operação sem verificar o dono do objeto.",
+    "impact": "Leitura ou alteração de dados de outros clientes (confidencialidade e integridade). Em contexto bancário, expõe ou modifica contas e dados pessoais de terceiros.",
+    "exploitation": "Um usuário autenticado troca o identificador do recurso na rota (por exemplo, o ID da conta) pelo de outra pessoa e repete a requisição.",
+    "prerequisites": "Dois usuários de teste do mesmo papel; rota e método do recurso configurados; ambiente que permita testes com escrita.",
+    "passWhen": "A operação de B no recurso de A é negada (401, 403 ou 404).",
+    "failWhen": "A operação de B no recurso de A retorna 2xx.",
+    "limitations": "Não confere se o dado foi de fato alterado (apenas o código de resposta). Cobre uma única rota configurada; outras rotas com o mesmo defeito não são detectadas.",
+    "severityReason": "Crítica: afeta dados de terceiros e é explorável por qualquer usuário autenticado.",
+    "proof": "confirmed",
+    "references": [
+     {
+      "label": "OWASP API Security Top 10 2023 — API1:2023",
+      "url": "https://owasp.org/API-Security/editions/2023/en/0xa1-broken-object-level-authorization/"
+     },
+     {
+      "label": "CWE-639",
+      "url": "https://cwe.mitre.org/data/definitions/639.html"
+     },
+     {
+      "label": "CWE-285",
+      "url": "https://cwe.mitre.org/data/definitions/285.html"
+     }
+    ],
+    "headline": "BOLA dinâmico — agir sobre o objeto de outro usuário",
+    "scopeNote": "Aprovado dentro do escopo efetivamente verificado — não é garantia de ausência da falha."
+   },
+   "aiRec": null,
+   "resolution": "open",
+   "resolutionNote": null
+  },
+  {
+   "rowId": "1f7dcabd-2ba4-4d39-b8b2-e3e98cffeada",
+   "id": "D-BFLA-01",
+   "category": "AUTHORIZATION",
+   "title": "BFLA — usuário comum negado em DELETE /users/bruno",
+   "status": "PASS",
+   "severity": "HIGH",
+   "detail": "Usuário comum foi negado (403) na função administrativa.",
+   "recommendation": "Validar o papel/permissão do usuário no servidor em toda rota administrativa (deny by default).",
+   "evidence": "DELETE http://127.0.0.1:55633/users/bruno\n(autenticado como \"ana\", papel \"user\")\n→ HTTP 403",
+   "source": "dynamic",
+   "owasp": "API5:2023",
+   "data": {
+    "requiresLogin": true
+   },
+   "state": "passed",
+   "confidence": "none",
+   "asset": {
+    "method": "DELETE",
+    "path": "/users/bruno",
+    "httpStatus": 403,
+    "host": "127.0.0.1:55633"
+   },
+   "meta": {
+    "policyId": "D-BFLA-01",
+    "summary": "Usuário comum executa função administrativa configurada.",
+    "technical": "Autentica um usuário de papel comum e chama a rota administrativa informada. Resposta 2xx indica que o servidor não verificou o papel.",
+    "impact": "Usuário comum realiza ações privilegiadas (administração, exclusão, relatórios).",
+    "exploitation": "Chamada direta à URL administrativa com o token de um usuário comum.",
+    "prerequisites": "Usuário comum cadastrado; rota administrativa informada; ambiente que permita testes com escrita se o método não for GET.",
+    "passWhen": "A rota nega o usuário comum.",
+    "failWhen": "A rota responde 2xx ao usuário comum.",
+    "limitations": "Cobre só as rotas informadas. Resposta 401 pode indicar que a rota nem chegou à checagem de papel.",
+    "severityReason": "Alta: escalada vertical de privilégio.",
+    "proof": "confirmed",
+    "references": [
+     {
+      "label": "OWASP API Security Top 10 2023 — API5:2023",
+      "url": "https://owasp.org/API-Security/editions/2023/en/0xa5-broken-function-level-authorization/"
+     },
+     {
+      "label": "CWE-285",
+      "url": "https://cwe.mitre.org/data/definitions/285.html"
+     },
+     {
+      "label": "CWE-862",
+      "url": "https://cwe.mitre.org/data/definitions/862.html"
+     }
+    ],
+    "headline": "BFLA — usuário comum negado em DELETE /users/bruno",
+    "scopeNote": "Aprovado dentro do escopo efetivamente verificado — não é garantia de ausência da falha."
+   },
+   "aiRec": null,
+   "resolution": "open",
+   "resolutionNote": null
+  },
+  {
+   "rowId": "1076b41e-1263-4210-a57b-7b342be0999a",
+   "id": "D-SPEC-01",
+   "category": "AUTHORIZATION",
+   "title": "Rotas protegidas pela spec negam acesso anônimo",
+   "status": "PASS",
+   "severity": "HIGH",
+   "detail": "2 rota(s) protegidas testadas sem credencial; todas negaram.",
+   "recommendation": "Aplicar autenticação obrigatória no servidor (deny by default) — a spec diz que a rota é protegida, mas ela não é.",
+   "evidence": "",
+   "source": "dynamic",
+   "owasp": "API2:2023",
+   "data": {
+    "observations": [
+     {
+      "method": "GET",
+      "path": "/api/contas",
+      "httpStatus": 401,
+      "outcome": "denied"
+     },
+     {
+      "method": "GET",
+      "path": "/admin/usuarios",
+      "httpStatus": 401,
+      "outcome": "denied"
+     }
+    ]
+   },
+   "state": "passed",
+   "confidence": "none",
+   "asset": {
+    "host": "127.0.0.1:55633"
+   },
+   "meta": {
+    "policyId": "D-SPEC-01",
+    "summary": "Rotas que a spec declara protegidas respondem sem credencial.",
+    "technical": "As rotas GET com 'security' na spec OpenAPI são chamadas sem credencial.",
+    "impact": "A proteção declarada não é aplicada pelo servidor.",
+    "exploitation": "Acesso direto sem login.",
+    "prerequisites": "Spec OpenAPI acessível.",
+    "passWhen": "Todas negam acesso anônimo.",
+    "failWhen": "Alguma rota protegida responde 2xx sem credencial.",
+    "limitations": "Só GET sem parâmetro de caminho e sem nome de ação. A spec pode estar desatualizada em relação ao serviço.",
+    "severityReason": "Alta: contradiz o contrato declarado da API.",
+    "proof": "confirmed",
+    "references": [
+     {
+      "label": "OWASP API Security Top 10 2023 — API2:2023",
+      "url": "https://owasp.org/API-Security/editions/2023/en/0xa2-broken-authentication/"
+     },
+     {
+      "label": "CWE-306",
+      "url": "https://cwe.mitre.org/data/definitions/306.html"
+     },
+     {
+      "label": "CWE-862",
+      "url": "https://cwe.mitre.org/data/definitions/862.html"
+     }
+    ],
+    "headline": "Rotas protegidas pela spec negam acesso anônimo",
+    "scopeNote": "Aprovado dentro do escopo efetivamente verificado — não é garantia de ausência da falha."
+   },
+   "aiRec": null,
+   "resolution": "open",
+   "resolutionNote": null
+  },
+  {
+   "rowId": "c8f21083-b629-41b1-b6a2-24aca926d3d1",
+   "id": "D-SPEC-02",
+   "category": "INPUT_VALIDATION",
+   "title": "Rotas públicas não expõem dados sensíveis",
+   "status": "FAIL",
+   "severity": "CRITICAL",
+   "detail": "1 rota(s) sem autenticação devolvem campos sensíveis. Por segurança, 1 rota(s) com nome de ação não foram chamadas: /createdb.",
+   "recommendation": "Exigir autenticação nessas rotas e devolver só campos necessários (allowlist de serialização); remover endpoints de debug.",
+   "evidence": "GET http://127.0.0.1:55633/publico/clientes → HTTP 200\n   campos sensíveis: clientes[0].cpf, clientes[0].password\n   {\"clientes\": [{\"nome\": \"Ana\", \"cpf\": \"[REDACTED]\", \"password\": \"[REDACTED]\"}]}",
+   "source": "dynamic",
+   "owasp": "API3:2023",
+   "data": {
+    "observations": [
+     {
+      "method": "GET",
+      "path": "/api/preview",
+      "httpStatus": 200,
+      "outcome": "clean",
+      "fields": []
+     },
+     {
+      "method": "GET",
+      "path": "/publico/clientes",
+      "httpStatus": 200,
+      "outcome": "sensitive",
+      "fields": [
+       "clientes[0].cpf",
+       "clientes[0].password"
+      ]
+     }
+    ]
+   },
+   "state": "vulnerable",
+   "confidence": "confirmed",
+   "asset": {
+    "method": "GET",
+    "path": "/publico/clientes",
+    "url": "http://127.0.0.1:55633/publico/clientes",
+    "httpStatus": 200,
+    "host": "127.0.0.1:55633"
+   },
+   "meta": {
+    "policyId": "D-SPEC-02",
+    "summary": "Rota pública devolve campos sensíveis.",
+    "technical": "Para as rotas GET sem segurança declarada na spec, a resposta JSON é varrida por campos sensíveis com valor. Valores são mascarados na evidência.",
+    "impact": "Dados pessoais ou credenciais acessíveis sem autenticação.",
+    "exploitation": "Qualquer pessoa chama a rota e lê os dados.",
+    "prerequisites": "Spec OpenAPI acessível.",
+    "passWhen": "Nenhuma rota pública devolve campos sensíveis.",
+    "failWhen": "Rota pública com campo sensível preenchido.",
+    "limitations": "Só rotas GET sem parâmetro de caminho e sem nome de ação. Detecta por nome de campo; dado sensível com nome genérico não é visto.",
+    "severityReason": "Crítica: dado sensível acessível sem autenticação.",
+    "proof": "confirmed",
+    "references": [
+     {
+      "label": "OWASP API Security Top 10 2023 — API3:2023",
+      "url": "https://owasp.org/API-Security/editions/2023/en/0xa3-broken-object-property-level-authorization/"
+     },
+     {
+      "label": "CWE-200",
+      "url": "https://cwe.mitre.org/data/definitions/200.html"
+     },
+     {
+      "label": "CWE-359",
+      "url": "https://cwe.mitre.org/data/definitions/359.html"
+     }
+    ],
+    "headline": "Rota pública devolve campos sensíveis."
+   },
+   "aiRec": null,
+   "resolution": "open",
+   "resolutionNote": null
+  },
+  {
+   "rowId": "0fefc2d4-ddb8-4bc9-9c02-f832bc64c634",
+   "id": "D-BFLA-A1",
+   "category": "AUTHORIZATION",
+   "title": "BFLA automático — rotas administrativas negam usuário comum",
+   "status": "PASS",
+   "severity": "HIGH",
+   "detail": "1 rota(s) administrativas negaram o usuário comum.",
+   "recommendation": "Validar papel/permissão no servidor em toda função administrativa (deny by default).",
+   "evidence": "",
+   "source": "dynamic",
+   "owasp": "API5:2023",
+   "data": {
+    "requiresLogin": true,
+    "observations": [
+     {
+      "method": "GET",
+      "path": "/admin/usuarios",
+      "httpStatus": 403,
+      "outcome": "denied"
+     }
+    ]
+   },
+   "state": "passed",
+   "confidence": "none",
+   "asset": {
+    "host": "127.0.0.1:55633"
+   },
+   "meta": {
+    "policyId": "D-BFLA-A1",
+    "summary": "Rotas administrativas descobertas pela spec respondem a um usuário comum.",
+    "technical": "A partir da spec, rotas GET com 'admin', 'internal' ou 'debug' no caminho ou na tag são chamadas com o token de um usuário comum.",
+    "impact": "Funções administrativas acessíveis a qualquer usuário autenticado.",
+    "exploitation": "Chamada direta à rota.",
+    "prerequisites": "Spec acessível e usuário comum cadastrado.",
+    "passWhen": "Todas as rotas administrativas negam o usuário comum.",
+    "failWhen": "Ao menos uma rota responde 2xx ao usuário comum.",
+    "limitations": "Só GET, sem parâmetro de caminho. A classificação 'administrativa' é por nome; rotas administrativas com outros nomes não são vistas.",
+    "severityReason": "Alta.",
+    "proof": "confirmed",
+    "references": [
+     {
+      "label": "OWASP API Security Top 10 2023 — API5:2023",
+      "url": "https://owasp.org/API-Security/editions/2023/en/0xa5-broken-function-level-authorization/"
+     },
+     {
+      "label": "CWE-285",
+      "url": "https://cwe.mitre.org/data/definitions/285.html"
+     },
+     {
+      "label": "CWE-862",
+      "url": "https://cwe.mitre.org/data/definitions/862.html"
+     }
+    ],
+    "headline": "BFLA automático — rotas administrativas negam usuário comum",
+    "scopeNote": "Aprovado dentro do escopo efetivamente verificado — não é garantia de ausência da falha."
+   },
+   "aiRec": null,
+   "resolution": "open",
+   "resolutionNote": null
+  },
+  {
+   "rowId": "b129b2f8-87b0-4b6a-9ece-a65b79891678",
+   "id": "D-FLOW-01",
+   "category": "AUTHORIZATION",
+   "title": "Fluxos de negócio sensíveis têm limite anti-automação documentado",
+   "status": "WARN",
+   "severity": "MEDIUM",
+   "detail": "1 de 1 fluxo(s) sensíveis não documentam resposta 429 / limite de uso.",
+   "recommendation": "Aplicar rate limit/quotas e proteção anti-automação (CAPTCHA, device binding, limites por conta) nos fluxos de transferência, cadastro, OTP e reset.",
+   "evidence": "POST /api/transferencias",
+   "source": "dynamic",
+   "owasp": "API6:2023",
+   "data": {
+    "observations": [
+     {
+      "method": "POST",
+      "path": "/api/transferencias",
+      "httpStatus": null,
+      "outcome": "undocumented"
+     }
+    ],
+    "documentationOnly": true
+   },
+   "state": "likely",
+   "confidence": "indicative",
+   "asset": {
+    "method": "POST",
+    "path": "/api/transferencias",
+    "url": "/api/transferencias",
+    "host": "127.0.0.1:55633"
+   },
+   "meta": {
+    "policyId": "D-FLOW-01",
+    "summary": "Fluxos sensíveis não documentam limite de uso.",
+    "technical": "Identifica na spec operações como transferência, pagamento, cadastro, OTP e reset e verifica se documentam resposta 429.",
+    "impact": "Automação abusiva de fluxos de negócio.",
+    "exploitation": "Uso de scripts para repetir o fluxo.",
+    "prerequisites": "Spec OpenAPI acessível.",
+    "passWhen": "Os fluxos documentam resposta 429.",
+    "failWhen": "Fluxos sensíveis sem resposta 429 documentada.",
+    "limitations": "Avalia a documentação, não o comportamento real. O limite pode existir e não estar documentado.",
+    "severityReason": "Média: é uma lacuna de contrato, não exploração comprovada.",
+    "proof": "indicative",
+    "references": [
+     {
+      "label": "OWASP API Security Top 10 2023 — API6:2023",
+      "url": "https://owasp.org/API-Security/editions/2023/en/0xa6-unrestricted-access-to-sensitive-business-flows/"
+     },
+     {
+      "label": "CWE-799",
+      "url": "https://cwe.mitre.org/data/definitions/799.html"
+     }
+    ],
+    "headline": "Fluxos sensíveis não documentam limite de uso."
+   },
+   "aiRec": null,
+   "resolution": "open",
+   "resolutionNote": null
+  },
+  {
+   "rowId": "bf33e93b-b497-4259-9121-e58047cf2f18",
+   "id": "D-FLOW-02",
+   "category": "TOKEN_SESSION",
+   "title": "Login protegido contra força bruta",
+   "status": "WARN",
+   "severity": "MEDIUM",
+   "detail": "12 tentativas de login inválidas seguidas não foram limitadas (sem 429/423/Retry-After).",
+   "recommendation": "Limitar tentativas por IP/conta, aplicar atraso progressivo/bloqueio temporário e alertar sobre credential stuffing.",
+   "evidence": "POST http://127.0.0.1:55633/login × 12 (usuário inexistente)\n→ HTTP [401]",
+   "source": "dynamic",
+   "owasp": "API6:2023",
+   "data": {
+    "observations": [
+     {
+      "method": "POST",
+      "path": "/login",
+      "httpStatus": 401,
+      "outcome": "accepted"
+     },
+     {
+      "method": "POST",
+      "path": "/login",
+      "httpStatus": 401,
+      "outcome": "accepted"
+     },
+     {
+      "method": "POST",
+      "path": "/login",
+      "httpStatus": 401,
+      "outcome": "accepted"
+     },
+     {
+      "method": "POST",
+      "path": "/login",
+      "httpStatus": 401,
+      "outcome": "accepted"
+     },
+     {
+      "method": "POST",
+      "path": "/login",
+      "httpStatus": 401,
+      "outcome": "accepted"
+     },
+     {
+      "method": "POST",
+      "path": "/login",
+      "httpStatus": 401,
+      "outcome": "accepted"
+     },
+     {
+      "method": "POST",
+      "path": "/login",
+      "httpStatus": 401,
+      "outcome": "accepted"
+     },
+     {
+      "method": "POST",
+      "path": "/login",
+      "httpStatus": 401,
+      "outcome": "accepted"
+     },
+     {
+      "method": "POST",
+      "path": "/login",
+      "httpStatus": 401,
+      "outcome": "accepted"
+     },
+     {
+      "method": "POST",
+      "path": "/login",
+      "httpStatus": 401,
+      "outcome": "accepted"
+     },
+     {
+      "method": "POST",
+      "path": "/login",
+      "httpStatus": 401,
+      "outcome": "accepted"
+     },
+     {
+      "method": "POST",
+      "path": "/login",
+      "httpStatus": 401,
+      "outcome": "accepted"
+     }
+    ]
+   },
+   "state": "likely",
+   "confidence": "indicative",
+   "asset": {
+    "method": "POST",
+    "path": "/login",
+    "url": "http://127.0.0.1:55633/login",
+    "host": "127.0.0.1:55633"
+   },
+   "meta": {
+    "policyId": "D-FLOW-02",
+    "summary": "O login não limitou tentativas inválidas repetidas.",
+    "technical": "Faz 12 tentativas com um usuário inexistente e procura 429, 423 ou Retry-After. Nenhuma conta real é afetada.",
+    "impact": "Força bruta e credential stuffing.",
+    "exploitation": "Tentativa automática de senhas.",
+    "prerequisites": "Rota de login configurada.",
+    "passWhen": "O login limita ou bloqueia as tentativas.",
+    "failWhen": "Nenhuma das 12 tentativas foi limitada.",
+    "limitations": "Usuário inexistente pode ser tratado diferente de usuário real; 12 tentativas podem ser poucas.",
+    "severityReason": "Média: indício sem exploração demonstrada.",
+    "proof": "indicative",
+    "references": [
+     {
+      "label": "OWASP API Security Top 10 2023 — API6:2023",
+      "url": "https://owasp.org/API-Security/editions/2023/en/0xa6-unrestricted-access-to-sensitive-business-flows/"
+     },
+     {
+      "label": "CWE-307",
+      "url": "https://cwe.mitre.org/data/definitions/307.html"
+     },
+     {
+      "label": "CWE-799",
+      "url": "https://cwe.mitre.org/data/definitions/799.html"
+     }
+    ],
+    "headline": "O login não limitou tentativas inválidas repetidas."
+   },
+   "aiRec": null,
+   "resolution": "open",
+   "resolutionNote": null
+  },
+  {
+   "rowId": "4add8403-3379-4f29-8960-42a484d36ae8",
+   "id": "D-SSRF-01",
+   "category": "INPUT_VALIDATION",
+   "title": "Parâmetros de URL não permitem SSRF",
+   "status": "PASS",
+   "severity": "CRITICAL",
+   "detail": "1 parâmetro(s) de URL testados; o servidor não acessou o endereço-canário, que o alvo consegue alcançar.",
+   "recommendation": "Validar URLs recebidas com allowlist de hosts, bloquear IPs internos/metadata (169.254.169.254, RFC1918) e desligar redirecionamentos.",
+   "evidence": "",
+   "source": "dynamic",
+   "owasp": "API7:2023",
+   "data": {
+    "observations": [
+     {
+      "method": "GET",
+      "path": "/api/preview",
+      "httpStatus": 200,
+      "outcome": "no_callback",
+      "param": "url"
+     }
+    ],
+    "canaryReachable": true
+   },
+   "state": "passed",
+   "confidence": "none",
+   "asset": {
+    "host": "127.0.0.1:55633"
+   },
+   "meta": {
+    "policyId": "D-SSRF-01",
+    "summary": "A API faz requisições a endereços informados pelo cliente (SSRF).",
+    "technical": "Envia uma URL-canário do Sentinela em parâmetros GET com nomes como url, callback ou webhook. Se o servidor alvo a acessar, o canário registra o acesso.",
+    "impact": "Acesso a serviços internos, metadados de nuvem e portas não expostas a partir do servidor.",
+    "exploitation": "O atacante informa uma URL interna no parâmetro.",
+    "prerequisites": "Spec com parâmetros de URL; o alvo precisa alcançar o endereço público do Sentinela (PUBLIC_API_URL).",
+    "passWhen": "Nenhum acesso ao canário foi registrado.",
+    "failWhen": "O alvo acessou o canário.",
+    "limitations": "Ausência de acesso NÃO prova que não há SSRF: o alvo pode não alcançar o Sentinela. Só GET e só parâmetros de consulta.",
+    "severityReason": "Crítica: permite alcançar a rede interna a partir do servidor.",
+    "proof": "confirmed",
+    "references": [
+     {
+      "label": "OWASP API Security Top 10 2023 — API7:2023",
+      "url": "https://owasp.org/API-Security/editions/2023/en/0xa7-server-side-request-forgery/"
+     },
+     {
+      "label": "CWE-918",
+      "url": "https://cwe.mitre.org/data/definitions/918.html"
+     }
+    ],
+    "headline": "Parâmetros de URL não permitem SSRF",
+    "scopeNote": "Aprovado dentro do escopo efetivamente verificado — não é garantia de ausência da falha."
+   },
+   "aiRec": null,
+   "resolution": "open",
+   "resolutionNote": null
+  },
+  {
+   "rowId": "c2b9dfcc-756b-41c5-a414-6dd6589e7f0c",
+   "id": "D-EXPO-01",
+   "category": "HEADERS",
+   "title": "Rotas de debug/administração não estão expostas",
+   "status": "PASS",
+   "severity": "HIGH",
+   "detail": "10 caminhos comuns de debug/administração testados; nenhum acessível.",
+   "recommendation": "Remover ou restringir (rede interna/autenticação forte) endpoints de actuator, debug, métricas e arquivos de configuração.",
+   "evidence": "",
+   "source": "dynamic",
+   "owasp": "API9:2023",
+   "data": {
+    "observations": [
+     {
+      "method": "GET",
+      "path": "/actuator/env",
+      "httpStatus": 404,
+      "outcome": "denied"
+     },
+     {
+      "method": "GET",
+      "path": "/actuator/heapdump",
+      "httpStatus": 404,
+      "outcome": "denied"
+     },
+     {
+      "method": "GET",
+      "path": "/actuator",
+      "httpStatus": 404,
+      "outcome": "denied"
+     },
+     {
+      "method": "GET",
+      "path": "/.env",
+      "httpStatus": 404,
+      "outcome": "denied"
+     },
+     {
+      "method": "GET",
+      "path": "/.git/config",
+      "httpStatus": 404,
+      "outcome": "denied"
+     },
+     {
+      "method": "GET",
+      "path": "/server-status",
+      "httpStatus": 404,
+      "outcome": "denied"
+     },
+     {
+      "method": "GET",
+      "path": "/phpinfo.php",
+      "httpStatus": 404,
+      "outcome": "denied"
+     },
+     {
+      "method": "GET",
+      "path": "/debug",
+      "httpStatus": 404,
+      "outcome": "denied"
+     },
+     {
+      "method": "GET",
+      "path": "/console",
+      "httpStatus": 404,
+      "outcome": "denied"
+     },
+     {
+      "method": "GET",
+      "path": "/metrics",
+      "httpStatus": 404,
+      "outcome": "denied"
+     }
+    ]
+   },
+   "state": "passed",
+   "confidence": "none",
+   "asset": {
+    "host": "127.0.0.1:55633"
+   },
+   "meta": {
+    "policyId": "D-EXPO-01",
+    "summary": "Rota de debug ou administração acessível sem autenticação.",
+    "technical": "Chama caminhos comuns (/actuator, /.env, /.git/config, /debug, /metrics) e valida o conteúdo da resposta, não apenas o 200.",
+    "impact": "Vazamento de configuração, segredos e código.",
+    "exploitation": "Acesso direto à URL.",
+    "prerequisites": "Alvo respondendo.",
+    "passWhen": "Nenhum dos caminhos testados devolve conteúdo sensível.",
+    "failWhen": "Caminho devolve conteúdo característico (variáveis, config do git, JSON de actuator).",
+    "limitations": "Lista fixa de 10 caminhos; outros não são testados.",
+    "severityReason": "Alta.",
+    "proof": "confirmed",
+    "references": [
+     {
+      "label": "OWASP API Security Top 10 2023 — API9:2023",
+      "url": "https://owasp.org/API-Security/editions/2023/en/0xa9-improper-inventory-management/"
+     },
+     {
+      "label": "CWE-489",
+      "url": "https://cwe.mitre.org/data/definitions/489.html"
+     },
+     {
+      "label": "CWE-538",
+      "url": "https://cwe.mitre.org/data/definitions/538.html"
+     },
+     {
+      "label": "CWE-215",
+      "url": "https://cwe.mitre.org/data/definitions/215.html"
+     }
+    ],
+    "headline": "Rotas de debug/administração não estão expostas",
+    "scopeNote": "Aprovado dentro do escopo efetivamente verificado — não é garantia de ausência da falha."
+   },
+   "aiRec": null,
+   "resolution": "open",
+   "resolutionNote": null
+  },
+  {
+   "rowId": "dda449f0-bb53-42df-9f20-e78c32bd0cc6",
+   "id": "D-DISC-01",
+   "category": "INVENTORY",
+   "title": "Discovery de endpoints (spec OpenAPI/Swagger)",
+   "status": "WARN",
+   "severity": "LOW",
+   "detail": "Spec encontrada em /openapi.json: 6 endpoint(s) documentados. 5 não constam no target configurado — possíveis shadow/zombie APIs: /admin/usuarios, /api/preview, /api/transferencias, /createdb, /publico/clientes.",
+   "recommendation": "Toda API documentada na spec deve estar mapeada e monitorada; specs desatualizadas ou endpoints fora do inventário são sinal de API9:2023 (Improper Inventory Management).",
+   "evidence": "6 endpoint(s) · 5 fora do inventário",
+   "source": "dynamic",
+   "owasp": "API9:2023",
+   "data": {
+    "type": "discovery",
+    "source": "dynamic",
+    "specPath": "/openapi.json",
+    "endpoints": [
+     {
+      "path": "/admin/usuarios",
+      "methods": [
+       "GET"
+      ]
+     },
+     {
+      "path": "/api/contas",
+      "methods": [
+       "GET"
+      ]
+     },
+     {
+      "path": "/api/preview",
+      "methods": [
+       "GET"
+      ]
+     },
+     {
+      "path": "/api/transferencias",
+      "methods": [
+       "POST"
+      ]
+     },
+     {
+      "path": "/createdb",
+      "methods": [
+       "GET"
+      ]
+     },
+     {
+      "path": "/publico/clientes",
+      "methods": [
+       "GET"
+      ]
+     }
+    ],
+    "unconfigured": [
+     "/admin/usuarios",
+     "/api/preview",
+     "/api/transferencias",
+     "/createdb",
+     "/publico/clientes"
+    ]
+   },
+   "state": "likely",
+   "confidence": "indicative",
+   "asset": {
+    "host": "127.0.0.1:55633"
+   },
+   "meta": {
+    "policyId": "D-DISC-01",
+    "summary": "Endpoints da spec fora do inventário do projeto.",
+    "technical": "Procura a spec OpenAPI/Swagger em caminhos conhecidos e compara com as rotas configuradas.",
+    "impact": "Endpoints esquecidos (shadow/zombie) fora do radar de segurança.",
+    "exploitation": "Uso de rotas antigas ou não monitoradas.",
+    "prerequisites": "Spec acessível.",
+    "passWhen": "Todos os endpoints da spec estão no inventário.",
+    "failWhen": "Endpoints da spec fora do inventário (alerta).",
+    "limitations": "Se a spec não for encontrada, nada é concluído (teste não executado).",
+    "severityReason": "Baixa.",
+    "proof": "indicative",
+    "references": [
+     {
+      "label": "OWASP API Security Top 10 2023 — API9:2023",
+      "url": "https://owasp.org/API-Security/editions/2023/en/0xa9-improper-inventory-management/"
+     }
+    ],
+    "headline": "Endpoints da spec fora do inventário do projeto."
+   },
+   "aiRec": null,
+   "resolution": "open",
+   "resolutionNote": null
+  }
+ ]
+}

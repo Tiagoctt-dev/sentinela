@@ -6,7 +6,9 @@ interface AuthApi {
   user: AuthUser | null;
   isAdmin: boolean;
   canWrite: boolean;
-  logout: () => void;
+  logout: () => Promise<void>;
+  /** Troca a sessão atual (após trocar a senha, o servidor invalida o token antigo). */
+  replaceSession: (token: string, user: AuthUser) => void;
 }
 
 const AuthCtx = createContext<AuthApi | null>(null);
@@ -51,13 +53,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("sentinela:unauthorized", onExpired);
   }, [bootstrap]);
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      await api.logoutServer(); // revoga o token no servidor; se falhar, sai localmente do mesmo jeito
+    } catch {
+      /* sem rede: a sessão local é encerrada mesmo assim */
+    }
     clearToken();
     setUser(null);
     setPhase("login");
   };
 
-  if (phase === "loading") return <p className="muted" style={{ padding: 32 }}>Carregando…</p>;
+  if (phase === "loading") return <p className="muted boot-loading">Carregando…</p>;
   if (phase === "error")
     return (
       <div className="auth-shell">
@@ -81,7 +88,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
 
   return (
-    <AuthCtx.Provider value={{ user, isAdmin: user?.role === "admin", canWrite: user?.role !== "viewer", logout }}>
+    <AuthCtx.Provider value={{ user, isAdmin: user?.role === "admin", canWrite: user?.role !== "viewer", logout, replaceSession: (t, u) => { setToken(t); setUser(u); } }}>
       {children}
     </AuthCtx.Provider>
   );
