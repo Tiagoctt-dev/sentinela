@@ -18,5 +18,31 @@ services:
       timeout: 5s
       retries: 10
 
+  # Perfil "full": sobe backend e frontend em container (uso de demonstração/homologação).
+  #   docker compose --profile full up --build
+  # Defina SENTINELA_SECRET_KEY no ambiente para fixar a chave de cifra dos segredos (ou mantenha o volume `appdata`).
+  backend:
+    profiles: ["full"]
+    build: ./backend
+    environment:
+      DATABASE_URL: postgresql+psycopg://sentinela:sentinela@postgres:5432/sentinela
+      SENTINELA_SECRET_KEY: ${SENTINELA_SECRET_KEY:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    volumes:
+      - appdata:/data
+
+  frontend:
+    profiles: ["full"]
+    build: ./frontend
+    depends_on:
+      - backend
+    ports:
+      - "8080:80"
+
 volumes:
   pgdata:
+  appdata:
